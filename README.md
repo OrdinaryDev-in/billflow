@@ -100,11 +100,31 @@ Recurring → Dashboard → hardening.
 - Verified end-to-end against the live Supabase project (create → list →
   search → edit → archive → reactivate).
 
+### 🟡 Phase 3 — Quotations (core flow done, PDF/email pending)
+- Shared line-item calculation engine (`lib/calculations/quotation.ts`):
+  per-line discount + GST, subtotal/discount/tax/grand total.
+- Quotation list, draft creation (atomic numbering via
+  `next_quotation_number` RPC), details form (scope, deliverables, timeline,
+  assumptions, exclusions, terms), interactive line-item editor (sections,
+  reordering, live totals), save/duplicate.
+- Draft is editable; once sent, details and items lock (duplicate to
+  revise).
+- Public quotation page at `/q/[token]` (admin-client, token-gated, no
+  auth) — branded proposal view, auto view-tracking, Accept / Request
+  changes / Decline actions posted to
+  `/api/public/quotation/[token]/action`, full client-activity audit trail
+  shown on the internal detail page.
+- Verified end-to-end: create draft → add line item → GST calculates live
+  → save → mark sent → public page renders → client accepts → status and
+  activity feed update correctly on both sides.
+- **Not yet built**: quotation templates, branded PDF export, and email
+  sending (needs `RESEND_API_KEY`) — the quotation is shareable via its
+  public link in the meantime.
+
 ### ⏳ Not started yet
-Quotations (+ templates, approval workflow, public `/q/[token]` page, PDF
-generation, email sending) · Projects · Invoices (+ public `/i/[token]`
-page) · Payment tracking · Recurring invoices · Automated reminders ·
-Dashboard metrics · Razorpay integration · production hardening.
+Projects · Invoices (+ public `/i/[token]` page) · Payment tracking ·
+Recurring invoices · Automated reminders · Dashboard metrics · Razorpay
+integration · quotation templates/PDF/email · production hardening.
 
 See the product/build-plan docs (kept outside this repo) for full detail on
 each phase.
