@@ -5,8 +5,8 @@ and small agencies:
 
 > Client → Quotation → Approval → Project → Invoice → Payment
 
-See the product plan, technical build plan and future backlog for full
-context (kept outside this repo).
+See [`docs/`](docs) for the full product plan, technical build plan and
+future-phases backlog this build follows.
 
 ## Stack
 
@@ -48,6 +48,10 @@ src/
   types/           # database.ts (generated), shared types
 supabase/
   migrations/      # SQL migrations, applied in order
+docs/
+  product-plan.md            # product vision, users, MVP feature set
+  build-plan.md               # architecture + the Phase 0-8 MVP checklist
+  future-phases-backlog.md    # post-MVP roadmap (Phases 2-12)
 ```
 
 ## Design system
@@ -205,11 +209,117 @@ Recurring → Dashboard → hardening.
   security review pass, mobile responsiveness pass, error handling
   hardening, production monitoring.
 
-### ⏳ Not started yet
-Automated payment reminders (needs the same cron + email infra as
-recurring invoices) · Razorpay integration · quotation/invoice
-templates/PDF/email · remaining Phase 8 hardening items above · actually
-scheduling the recurring-invoices cron job (needs a Vercel deployment).
+---
 
-See the product/build-plan docs (kept outside this repo) for full detail on
-each phase.
+## MVP checklist
+
+Full checkbox list from [`docs/build-plan.md`](docs/build-plan.md#16-mvp-development-phases),
+marked against what's actually built and verified. Unchecked items are the
+honest remaining scope — most are blocked on external setup (Resend,
+Razorpay, a Vercel deployment) rather than more application code.
+
+### Phase 0 — Foundation
+- [x] Create Next.js project
+- [x] Configure TypeScript
+- [x] Configure Supabase project
+- [x] Configure Supabase Auth
+- [x] Create database migrations
+- [x] Create organization tenancy model
+- [x] Implement RLS policies
+- [x] Configure Supabase Storage
+- [x] Configure environment variables
+- [ ] Deploy development environment to Vercel
+
+### Phase 1 — Authentication and Organization
+- [x] Sign up
+- [x] Login
+- [x] Logout
+- [x] Password reset
+- [x] Google login *(code path built; needs the Google provider enabled in the Supabase Auth dashboard to actually work)*
+- [x] Profile creation
+- [x] Organization creation
+- [x] Owner membership
+- [x] Business settings
+- [x] GST settings
+- [x] Invoice numbering
+
+### Phase 2 — Clients
+- [x] Client database
+- [x] Client RLS
+- [x] Client list
+- [x] Create client
+- [x] Edit client
+- [x] Archive client
+- [x] Client detail page
+- [x] Search clients
+
+### Phase 3 — Quotations
+- [x] Quotation schema
+- [x] Quotation items
+- [x] Quotation editor
+- [x] GST calculations
+- [x] Discounts
+- [x] Proposal sections
+- [x] Draft saving
+- [x] Quotation list
+- [x] Quotation details
+- [x] Public token
+- [x] Public quotation page
+- [ ] PDF generation
+- [ ] Email sending
+
+### Phase 4 — Projects
+- [x] Project schema
+- [x] Project creation
+- [x] Quote-to-project conversion
+- [x] Contract value tracking
+- [x] Project detail page
+- [x] Project financial summary
+
+### Phase 5 — Invoices
+- [x] Invoice schema
+- [x] Invoice items
+- [x] Invoice editor
+- [x] GST calculations
+- [x] Invoice numbering
+- [ ] Invoice PDF
+- [x] Public invoice page
+- [ ] Invoice email
+- [x] Due dates
+- [x] Status calculation
+
+### Phase 6 — Payments
+- [x] Manual payment recording
+- [x] Partial payments
+- [x] Payment history
+- [x] Invoice balance calculation
+- [x] Paid status
+- [x] Partial payment status
+- [x] Overdue calculation *(computed at display time from `due_date`; the persisted `status` column itself isn't flipped by a background job yet — see Phase 8)*
+
+### Phase 7 — Recurring Invoices
+- [x] Schedule model
+- [x] Recurring schedule UI
+- [ ] Scheduled execution *(the `/api/jobs/recurring-invoices` endpoint exists and is idempotent; nothing calls it on a schedule yet — needs Vercel Cron after deployment)*
+- [x] Automatic invoice generation *(via the endpoint above, or the manual "Generate now" button)*
+- [x] Duplicate prevention
+- [x] Recurring invoice history
+- [x] Pause/resume
+
+### Phase 8 — Dashboard and Product Hardening
+- [x] Dashboard metrics
+- [ ] Recent activity *(dashboard shows Upcoming due invoices + Recent payments instead; the `activity_logs` table exists but nothing writes to it yet)*
+- [x] Outstanding calculation
+- [x] Overdue calculation
+- [ ] Error handling *(happy-path only; no dedicated error boundaries/toasts pass)*
+- [ ] Empty states *(present on list pages; not audited everywhere)*
+- [ ] Loading states
+- [ ] RLS security review
+- [ ] Mobile responsiveness
+- [ ] Performance review
+- [ ] Production monitoring
+
+### Beyond the Phase 0-8 checklist
+- [ ] Razorpay payment links (build order step 18)
+- [ ] Automated payment reminders (future-phases-backlog Epic 2.2 — needs the same cron + email infra as recurring invoices)
+- [ ] Quotation templates (product-plan §6.4)
