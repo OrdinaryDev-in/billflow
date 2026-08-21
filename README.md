@@ -170,10 +170,21 @@ Recurring → Dashboard → hardening.
   validation. (Worth grepping for elsewhere if new quick-add forms are
   added without every schema field present as an input.)
 
+### ✅ Phase 8 (partial) — Dashboard metrics
+- Outstanding, Overdue, Paid this month and Quote pipeline tiles now query
+  live data (previously hard-coded ₹0) — outstanding/overdue from
+  `invoices.balance_due`, paid-this-month from `payments`, pipeline from
+  sent/viewed `quotations`.
+- Upcoming due invoices and Recent payments widgets.
+- Verified against real data end-to-end (see Phase 6).
+- Still open from Phase 8: empty/loading states beyond the basics, RLS
+  security review pass, mobile responsiveness pass, error handling
+  hardening, production monitoring.
+
 ### ⏳ Not started yet
-Recurring invoices · Automated reminders · Dashboard metrics (still
-hard-coded ₹0 tiles) · Razorpay integration · quotation/invoice
-templates/PDF/email · production hardening.
+Recurring invoices (schedule model exists in the DB, no UI/cron yet) ·
+Automated reminders · Razorpay integration · quotation/invoice
+templates/PDF/email · remaining Phase 8 hardening items above.
 
 See the product/build-plan docs (kept outside this repo) for full detail on
 each phase.
