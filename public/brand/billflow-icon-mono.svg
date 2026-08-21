@@ -1,0 +1,5 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M62 34H140L194 88V178C194 202.301 174.301 222 150 222H76C51.699 222 32 202.301 32 178V64C32 47.431 45.431 34 62 34Z" fill="currentColor"/>
+<path d="M140 34V88H194" fill="white" fill-opacity=".45"/>
+<path d="M48 174C76 142 104 132 130 141C153 149 165 169 195 154C171 196 135 218 93 218C73 218 57 204 48 174Z" fill="white"/>
+</svg>

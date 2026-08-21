@@ -1,0 +1,10 @@
+<svg width="640" height="160" viewBox="0 0 640 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="640" height="160" rx="28" fill="#F8FAFC"/>
+<g transform="translate(28 28)">
+  <path d="M20 0H72L108 36V88C108 105.673 93.673 120 76 120H32C14.327 120 0 105.673 0 88V20C0 8.954 8.954 0 20 0Z" fill="#2563EB"/>
+  <path d="M72 0V36H108" fill="#93C5FD"/>
+  <path d="M12 88C29 70 47 64 63 69C78 74 83 84 101 76C88 99 70 108 50 108C33 108 21 101 12 88Z" fill="#F8FAFC"/>
+</g>
+<text x="164" y="99" font-family="Inter, Arial, sans-serif" font-size="78" font-weight="700" letter-spacing="-3" fill="#0F172A">bill</text>
+<text x="301" y="99" font-family="Inter, Arial, sans-serif" font-size="78" font-weight="700" letter-spacing="-3" fill="#2563EB">flow</text>
+</svg>
