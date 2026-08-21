@@ -17,6 +17,8 @@ const STATUS_STYLES: Record<string, string> = {
   on_hold: "bg-warning/10 text-warning",
   pending: "bg-surface-subtle text-text-tertiary",
   in_progress: "bg-primary-soft text-primary",
+  paused: "bg-warning/10 text-warning",
+  ended: "bg-surface-subtle text-text-tertiary",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -36,6 +38,8 @@ const STATUS_LABELS: Record<string, string> = {
   on_hold: "On hold",
   pending: "Pending",
   in_progress: "In progress",
+  paused: "Paused",
+  ended: "Ended",
 };
 
 export function StatusBadge({ status }: { status: string }) {

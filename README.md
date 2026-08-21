@@ -170,6 +170,30 @@ Recurring → Dashboard → hardening.
   validation. (Worth grepping for elsewhere if new quick-add forms are
   added without every schema field present as an input.)
 
+### ✅ Phase 7 — Recurring invoices
+- Schedule CRUD: name, client, project, frequency (weekly/monthly/
+  quarterly/yearly), interval count, next-run date, optional end date,
+  payment-due days.
+- Invoice template editor (line items + notes/terms) stored as JSONB on the
+  schedule, independent of the invoice_items table.
+- Idempotent generation core (`lib/recurring/generate.ts`), shared by the
+  manual "Generate invoice now" button and the scheduled-job endpoint:
+  `next_run_at` is always advanced from its *previous* value (never from
+  "now"), so a second automated call before the next period starts safely
+  no-ops. The manual button intentionally passes `force: true` to bypass
+  the due-date check — that's a deliberate off-cycle override, not a gap
+  in the idempotency guarantee.
+- `POST /api/jobs/recurring-invoices`, bearer-token gated via
+  `CRON_SECRET`, generates invoices for every due schedule — ready for a
+  Vercel Cron / scheduled function once deployed; fails closed (500) if
+  `CRON_SECRET` isn't configured, verified locally.
+- Added `invoices.recurring_schedule_id` (migration
+  `20260821000007_recurring_invoice_link.sql`) so each schedule's detail
+  page shows its full generation history, not just the latest invoice.
+- Verified end-to-end: create schedule → save template → Generate now →
+  invoice created with correct total/due date → `next_run_at` advances by
+  exactly one interval → history list shows it after a fresh page load.
+
 ### ✅ Phase 8 (partial) — Dashboard metrics
 - Outstanding, Overdue, Paid this month and Quote pipeline tiles now query
   live data (previously hard-coded ₹0) — outstanding/overdue from
@@ -182,9 +206,10 @@ Recurring → Dashboard → hardening.
   hardening, production monitoring.
 
 ### ⏳ Not started yet
-Recurring invoices (schedule model exists in the DB, no UI/cron yet) ·
-Automated reminders · Razorpay integration · quotation/invoice
-templates/PDF/email · remaining Phase 8 hardening items above.
+Automated payment reminders (needs the same cron + email infra as
+recurring invoices) · Razorpay integration · quotation/invoice
+templates/PDF/email · remaining Phase 8 hardening items above · actually
+scheduling the recurring-invoices cron job (needs a Vercel deployment).
 
 See the product/build-plan docs (kept outside this repo) for full detail on
 each phase.

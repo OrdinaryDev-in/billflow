@@ -204,6 +204,7 @@ export type Database = {
           po_number: string | null
           project_id: string | null
           public_token: string
+          recurring_schedule_id: string | null
           sent_at: string | null
           source_quotation_id: string | null
           status: string
@@ -232,6 +233,7 @@ export type Database = {
           po_number?: string | null
           project_id?: string | null
           public_token?: string
+          recurring_schedule_id?: string | null
           sent_at?: string | null
           source_quotation_id?: string | null
           status?: string
@@ -260,6 +262,7 @@ export type Database = {
           po_number?: string | null
           project_id?: string | null
           public_token?: string
+          recurring_schedule_id?: string | null
           sent_at?: string | null
           source_quotation_id?: string | null
           status?: string
@@ -296,6 +299,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_recurring_schedule_id_fkey"
+            columns: ["recurring_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_invoice_schedules"
             referencedColumns: ["id"]
           },
           {
