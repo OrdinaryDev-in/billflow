@@ -10,6 +10,7 @@ import {
   saveInvoiceItemsSchema,
   type InvoiceItemInput,
 } from "@/lib/validation/invoices";
+import { logActivity } from "@/lib/activity/log";
 import type { ActionState } from "@/actions/auth";
 import type { Tables } from "@/types/database";
 
@@ -48,6 +49,14 @@ export async function createDraftInvoice(
   if (error || !data) {
     throw new Error(error?.message ?? "Could not create invoice.");
   }
+
+  await logActivity(supabase, {
+    organizationId,
+    entityType: "invoice",
+    entityId: data.id,
+    action: "created",
+    metadata: { invoice_number: number },
+  });
 
   revalidatePath("/invoices");
   redirect(`/invoices/${data.id}`);
@@ -131,6 +140,14 @@ export async function createInvoiceFromQuotation(quotationId: string) {
     if (itemsError) throw new Error(itemsError.message);
   }
 
+  await logActivity(supabase, {
+    organizationId: quotation.organization_id,
+    entityType: "invoice",
+    entityId: invoice.id,
+    action: "created_from_quotation",
+    metadata: { quotation_number: quotation.quotation_number, invoice_number: number },
+  });
+
   revalidatePath("/invoices");
   redirect(`/invoices/${invoice.id}`);
 }
@@ -212,6 +229,14 @@ export async function createInvoiceFromMilestone(projectId: string, milestoneId:
     .from("milestones")
     .update({ invoiced_amount: milestone.invoiced_amount + remaining })
     .eq("id", milestoneId);
+
+  await logActivity(supabase, {
+    organizationId: project.organization_id,
+    entityType: "invoice",
+    entityId: invoice.id,
+    action: "created_from_milestone",
+    metadata: { milestone_name: milestone.name, invoice_number: number },
+  });
 
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/invoices");
@@ -341,12 +366,24 @@ export async function saveInvoiceItems(invoiceId: string, rawItems: InvoiceItemI
 
 export async function sendInvoice(invoiceId: string) {
   const supabase = await createSupabaseClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("invoices")
     .update({ status: "sent", sent_at: new Date().toISOString() })
-    .eq("id", invoiceId);
+    .eq("id", invoiceId)
+    .select("organization_id, invoice_number")
+    .single();
 
   if (error) throw new Error(error.message);
+
+  if (data) {
+    await logActivity(supabase, {
+      organizationId: data.organization_id,
+      entityType: "invoice",
+      entityId: invoiceId,
+      action: "sent",
+      metadata: { invoice_number: data.invoice_number },
+    });
+  }
 
   revalidatePath(`/invoices/${invoiceId}`);
   revalidatePath("/invoices");
@@ -354,12 +391,24 @@ export async function sendInvoice(invoiceId: string) {
 
 export async function cancelInvoice(invoiceId: string) {
   const supabase = await createSupabaseClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("invoices")
     .update({ status: "cancelled" })
-    .eq("id", invoiceId);
+    .eq("id", invoiceId)
+    .select("organization_id, invoice_number")
+    .single();
 
   if (error) throw new Error(error.message);
+
+  if (data) {
+    await logActivity(supabase, {
+      organizationId: data.organization_id,
+      entityType: "invoice",
+      entityId: invoiceId,
+      action: "cancelled",
+      metadata: { invoice_number: data.invoice_number },
+    });
+  }
 
   revalidatePath(`/invoices/${invoiceId}`);
   revalidatePath("/invoices");

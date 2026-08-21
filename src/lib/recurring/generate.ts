@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { calculateDocumentTotals, calculateLineItem } from "@/lib/calculations/quotation";
 import { determineTaxType } from "@/lib/calculations/invoice";
 import { advanceScheduleDate, type ScheduleFrequency } from "@/lib/calculations/schedule";
+import { logActivity } from "@/lib/activity/log";
 import type { RecurringTemplateInput } from "@/lib/validation/recurring";
 import type { Database } from "@/types/database";
 
@@ -140,6 +141,14 @@ export async function generateInvoiceForSchedule(
     })
     .eq("id", schedule.id);
   if (updateError) throw new Error(updateError.message);
+
+  await logActivity(supabase, {
+    organizationId: schedule.organization_id,
+    entityType: "invoice",
+    entityId: invoice.id,
+    action: "created_from_recurring_schedule",
+    metadata: { schedule_name: schedule.name, invoice_number: number },
+  });
 
   return { created: true, invoiceId: invoice.id, scheduleEnded };
 }

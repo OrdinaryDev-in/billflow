@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 import { recordPaymentSchema } from "@/lib/validation/invoices";
+import { logActivity } from "@/lib/activity/log";
 import type { ActionState } from "@/actions/auth";
 
 export async function recordPayment(
@@ -26,18 +27,32 @@ export async function recordPayment(
   const v = parsed.data;
   const supabase = await createSupabaseClient();
 
-  const { error } = await supabase.from("payments").insert({
-    organization_id: organizationId,
-    invoice_id: invoiceId,
-    amount: v.amount,
-    payment_method: v.paymentMethod,
-    payment_reference: v.paymentReference || null,
-    paid_at: new Date(v.paidAt).toISOString(),
-    notes: v.notes || null,
-  });
+  const { data, error } = await supabase
+    .from("payments")
+    .insert({
+      organization_id: organizationId,
+      invoice_id: invoiceId,
+      amount: v.amount,
+      payment_method: v.paymentMethod,
+      payment_reference: v.paymentReference || null,
+      paid_at: new Date(v.paidAt).toISOString(),
+      notes: v.notes || null,
+    })
+    .select("id")
+    .single();
 
   if (error) {
     return { error: error.message };
+  }
+
+  if (data) {
+    await logActivity(supabase, {
+      organizationId,
+      entityType: "payment",
+      entityId: data.id,
+      action: "recorded",
+      metadata: { amount: v.amount, method: v.paymentMethod },
+    });
   }
 
   // invoices.amount_paid / balance_due / status are recalculated by the

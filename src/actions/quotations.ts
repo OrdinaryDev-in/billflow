@@ -9,6 +9,7 @@ import {
   quotationItemSchema,
   type QuotationItemInput,
 } from "@/lib/validation/quotations";
+import { logActivity } from "@/lib/activity/log";
 import type { ActionState } from "@/actions/auth";
 import type { Tables } from "@/types/database";
 import { z } from "zod";
@@ -37,6 +38,14 @@ export async function createDraftQuotation(organizationId: string, clientId: str
   if (error || !data) {
     throw new Error(error?.message ?? "Could not create quotation.");
   }
+
+  await logActivity(supabase, {
+    organizationId,
+    entityType: "quotation",
+    entityId: data.id,
+    action: "created",
+    metadata: { quotation_number: number },
+  });
 
   revalidatePath("/quotations");
   redirect(`/quotations/${data.id}`);
@@ -167,15 +176,27 @@ export async function saveQuotationItems(quotationId: string, rawItems: Quotatio
 
 export async function sendQuotation(quotationId: string) {
   const supabase = await createSupabaseClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("quotations")
     .update({ status: "sent", sent_at: new Date().toISOString() })
-    .eq("id", quotationId);
+    .eq("id", quotationId)
+    .select("organization_id, quotation_number")
+    .single();
 
   if (error) throw new Error(error.message);
 
   // Email delivery is wired up once RESEND_API_KEY is configured (see .env.example).
   // Until then, the quotation is marked sent and shareable via its public link.
+
+  if (data) {
+    await logActivity(supabase, {
+      organizationId: data.organization_id,
+      entityType: "quotation",
+      entityId: quotationId,
+      action: "sent",
+      metadata: { quotation_number: data.quotation_number },
+    });
+  }
 
   revalidatePath(`/quotations/${quotationId}`);
   revalidatePath("/quotations");

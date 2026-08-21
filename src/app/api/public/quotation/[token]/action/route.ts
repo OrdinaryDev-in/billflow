@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { quotationApprovalSchema } from "@/lib/validation/quotations";
+import { logActivity } from "@/lib/activity/log";
 
 export async function POST(
   request: Request,
@@ -21,7 +22,7 @@ export async function POST(
 
   const { data: quotation, error: fetchError } = await supabase
     .from("quotations")
-    .select("id, status")
+    .select("id, status, organization_id, quotation_number")
     .eq("public_token", token)
     .single();
 
@@ -63,6 +64,15 @@ export async function POST(
   if (eventError) {
     return NextResponse.json({ error: eventError.message }, { status: 500 });
   }
+
+  await logActivity(supabase, {
+    organizationId: quotation.organization_id,
+    actorUserId: null,
+    entityType: "quotation",
+    entityId: quotation.id,
+    action: `client_${action}`,
+    metadata: { quotation_number: quotation.quotation_number, client_name: clientName },
+  });
 
   return NextResponse.json({ ok: true });
 }

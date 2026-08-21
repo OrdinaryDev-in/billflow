@@ -87,6 +87,7 @@ export default async function PublicQuotationPage({
         )}
 
         <section className="overflow-hidden rounded-lg border border-border-default bg-surface shadow-sm">
+          <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-border-default bg-surface-subtle text-xs font-medium uppercase tracking-wide text-text-tertiary">
               <tr>
@@ -126,6 +127,7 @@ export default async function PublicQuotationPage({
               )}
             </tbody>
           </table>
+          </div>
           <div className="flex flex-col gap-1 border-t border-border-default px-6 py-4">
             <div className="flex justify-between text-sm text-text-secondary">
               <span>Subtotal</span>

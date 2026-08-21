@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 import { clientSchema } from "@/lib/validation/clients";
+import { logActivity } from "@/lib/activity/log";
 import type { ActionState } from "@/actions/auth";
 
 function parseClientForm(formData: FormData) {
@@ -59,6 +60,14 @@ export async function createClientRecord(
     return { error: error?.message ?? "Could not create client." };
   }
 
+  await logActivity(supabase, {
+    organizationId,
+    entityType: "client",
+    entityId: data.id,
+    action: "created",
+    metadata: { name: v.name },
+  });
+
   revalidatePath("/clients");
   redirect(`/clients/${data.id}`);
 }
@@ -104,10 +113,25 @@ export async function updateClientRecord(
 
 export async function setClientStatus(clientId: string, status: "active" | "archived") {
   const supabase = await createSupabaseClient();
-  const { error } = await supabase.from("clients").update({ status }).eq("id", clientId);
+  const { data, error } = await supabase
+    .from("clients")
+    .update({ status })
+    .eq("id", clientId)
+    .select("organization_id, name")
+    .single();
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (data) {
+    await logActivity(supabase, {
+      organizationId: data.organization_id,
+      entityType: "client",
+      entityId: clientId,
+      action: status === "archived" ? "archived" : "reactivated",
+      metadata: { name: data.name },
+    });
   }
 
   revalidatePath("/clients");

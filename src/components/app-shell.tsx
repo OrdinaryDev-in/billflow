@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "@/actions/auth";
+import { MobileNav } from "@/components/mobile-nav";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -59,15 +60,12 @@ export function AppShell({
       </aside>
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-border-default bg-surface px-4 py-3 sm:hidden">
+          <MobileNav organizationName={organizationName} />
           <Link href="/dashboard" className="flex items-center gap-2">
             <Image src="/brand/billflow-logo-primary.svg" alt="Billflow" width={22} height={22} />
             <span className="text-sm font-semibold text-text-primary">Billflow</span>
           </Link>
-          <form action={signOut}>
-            <button type="submit" className="text-sm font-medium text-text-secondary">
-              Sign out
-            </button>
-          </form>
+          <div className="w-9" aria-hidden="true" />
         </header>
         <main className="flex-1 bg-page px-4 py-6 sm:px-8 sm:py-8">{children}</main>
       </div>

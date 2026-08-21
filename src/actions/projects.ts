@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 import { milestoneSchema, projectSchema } from "@/lib/validation/projects";
+import { logActivity } from "@/lib/activity/log";
 import type { ActionState } from "@/actions/auth";
 
 export async function createProject(
@@ -45,6 +46,14 @@ export async function createProject(
   if (error || !data) {
     return { error: error?.message ?? "Could not create project." };
   }
+
+  await logActivity(supabase, {
+    organizationId,
+    entityType: "project",
+    entityId: data.id,
+    action: "created",
+    metadata: { name: v.name },
+  });
 
   revalidatePath("/projects");
   redirect(`/projects/${data.id}`);
@@ -140,6 +149,14 @@ export async function convertQuotationToProject(quotationId: string) {
   }
 
   await supabase.from("quotations").update({ project_id: project.id }).eq("id", quotationId);
+
+  await logActivity(supabase, {
+    organizationId: quotation.organization_id,
+    entityType: "project",
+    entityId: project.id,
+    action: "created_from_quotation",
+    metadata: { quotation_number: quotation.quotation_number },
+  });
 
   revalidatePath("/projects");
   revalidatePath(`/quotations/${quotationId}`);

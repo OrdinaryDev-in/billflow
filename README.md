@@ -77,5 +77,5 @@ verified).
 | 5 — Invoices | Incomplete — invoice PDF, invoice email |
 | 6 — Payments | Done |
 | 7 — Recurring Invoices | Incomplete — scheduled execution (the `/api/jobs/recurring-invoices` endpoint is built and idempotent; nothing calls it on a schedule yet — needs Vercel Cron after deployment) |
-| 8 — Dashboard & Product Hardening | Incomplete — recent activity feed, error handling, loading states, RLS security review, mobile responsiveness, performance review, production monitoring |
+| 8 — Dashboard & Product Hardening | Incomplete — production monitoring (needs a deployment + an APM service; error boundaries already log to console as the wiring point) |
 | Beyond MVP | Not started — Razorpay payment links, automated payment reminders |

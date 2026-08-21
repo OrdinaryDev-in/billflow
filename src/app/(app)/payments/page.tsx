@@ -46,6 +46,7 @@ export default async function PaymentsPage() {
         )}
 
         {!error && payments && payments.length > 0 && (
+          <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-border-default bg-surface-subtle text-xs font-medium uppercase tracking-wide text-text-tertiary">
               <tr>
@@ -94,6 +95,7 @@ export default async function PaymentsPage() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

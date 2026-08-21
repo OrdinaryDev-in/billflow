@@ -19,7 +19,7 @@ export default async function QuotationsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Quotations</h1>
           <p className="mt-1 text-sm text-text-secondary">
@@ -53,6 +53,7 @@ export default async function QuotationsPage() {
         )}
 
         {!error && quotations && quotations.length > 0 && (
+          <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-border-default bg-surface-subtle text-xs font-medium uppercase tracking-wide text-text-tertiary">
               <tr>
@@ -88,6 +89,7 @@ export default async function QuotationsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

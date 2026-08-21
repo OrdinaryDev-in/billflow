@@ -9,6 +9,7 @@ import {
   type RecurringTemplateInput,
 } from "@/lib/validation/recurring";
 import { generateInvoiceForSchedule } from "@/lib/recurring/generate";
+import { logActivity } from "@/lib/activity/log";
 import type { ActionState } from "@/actions/auth";
 
 const EMPTY_TEMPLATE: RecurringTemplateInput = {
@@ -59,6 +60,14 @@ export async function createSchedule(
   if (error || !data) {
     return { error: error?.message ?? "Could not create schedule." };
   }
+
+  await logActivity(supabase, {
+    organizationId,
+    entityType: "recurring_schedule",
+    entityId: data.id,
+    action: "created",
+    metadata: { name: v.name },
+  });
 
   revalidatePath("/recurring");
   redirect(`/recurring/${data.id}`);
@@ -127,12 +136,24 @@ export async function saveScheduleTemplate(scheduleId: string, rawTemplate: Recu
 
 export async function setScheduleStatus(scheduleId: string, status: "active" | "paused" | "ended") {
   const supabase = await createSupabaseClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("recurring_invoice_schedules")
     .update({ status })
-    .eq("id", scheduleId);
+    .eq("id", scheduleId)
+    .select("organization_id, name")
+    .single();
 
   if (error) throw new Error(error.message);
+
+  if (data) {
+    await logActivity(supabase, {
+      organizationId: data.organization_id,
+      entityType: "recurring_schedule",
+      entityId: scheduleId,
+      action: status,
+      metadata: { name: data.name },
+    });
+  }
 
   revalidatePath(`/recurring/${scheduleId}`);
   revalidatePath("/recurring");

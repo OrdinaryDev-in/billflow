@@ -70,7 +70,7 @@ export default async function InvoiceDetailPage({
         <InvoiceActions invoiceId={invoice.id} status={invoice.status} publicUrl={publicUrl} />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
           { label: "Total", value: invoice.grand_total },
           { label: "Paid", value: invoice.amount_paid },

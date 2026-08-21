@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireOrganization } from "@/lib/organizations/require";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/calculations/quotation";
+import { describeActivity } from "@/lib/activity/format";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -21,13 +22,14 @@ export default async function DashboardPage() {
     { data: pipelineRows },
     { data: upcomingDue },
     { data: recentPayments },
+    { data: recentActivity },
   ] = await Promise.all([
     supabase
       .from("invoices")
       .select("balance_due")
       .eq("organization_id", organization.id)
       .gt("balance_due", 0)
-      .not("status", "eq", "cancelled"),
+      .in("status", ["sent", "viewed", "partially_paid"]),
     supabase
       .from("invoices")
       .select("balance_due")
@@ -61,6 +63,12 @@ export default async function DashboardPage() {
       .eq("organization_id", organization.id)
       .order("paid_at", { ascending: false })
       .limit(5),
+    supabase
+      .from("activity_logs")
+      .select("id, entity_type, action, created_at")
+      .eq("organization_id", organization.id)
+      .order("created_at", { ascending: false })
+      .limit(8),
   ]);
 
   const outstanding = (outstandingRows ?? []).reduce((sum, r) => sum + r.balance_due, 0);
@@ -169,6 +177,35 @@ export default async function DashboardPage() {
             </p>
           )}
         </div>
+      </div>
+
+      <div className="rounded-lg border border-border-default bg-surface shadow-sm">
+        <div className="border-b border-border-default px-5 py-3">
+          <h2 className="text-sm font-semibold text-text-primary">Recent activity</h2>
+        </div>
+        {recentActivity && recentActivity.length > 0 ? (
+          <ul className="divide-y divide-border-default">
+            {recentActivity.map((a) => (
+              <li key={a.id} className="flex items-center justify-between px-5 py-3">
+                <span className="text-sm text-text-primary">
+                  {describeActivity(a.entity_type, a.action)}
+                </span>
+                <span className="text-xs text-text-tertiary">
+                  {new Date(a.created_at).toLocaleString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="px-5 py-8 text-center text-sm text-text-secondary">
+            No activity yet — it&apos;ll show up here as you create and send documents.
+          </p>
+        )}
       </div>
     </div>
   );
