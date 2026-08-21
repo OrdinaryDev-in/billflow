@@ -12,6 +12,11 @@ const STATUS_STYLES: Record<string, string> = {
   rejected: "bg-danger/10 text-danger",
   cancelled: "bg-surface-subtle text-text-tertiary",
   expired: "bg-surface-subtle text-text-tertiary",
+  active: "bg-success/10 text-success",
+  completed: "bg-primary-soft text-primary",
+  on_hold: "bg-warning/10 text-warning",
+  pending: "bg-surface-subtle text-text-tertiary",
+  in_progress: "bg-primary-soft text-primary",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -26,6 +31,11 @@ const STATUS_LABELS: Record<string, string> = {
   rejected: "Rejected",
   cancelled: "Cancelled",
   expired: "Expired",
+  active: "Active",
+  completed: "Completed",
+  on_hold: "On hold",
+  pending: "Pending",
+  in_progress: "In progress",
 };
 
 export function StatusBadge({ status }: { status: string }) {

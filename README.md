@@ -121,10 +121,27 @@ Recurring → Dashboard → hardening.
   sending (needs `RESEND_API_KEY`) — the quotation is shareable via its
   public link in the meantime.
 
+### ✅ Phase 4 — Projects
+- Project list, manual creation, edit, financial summary tiles (contract
+  value, invoiced, paid, outstanding — invoiced/paid aggregate from
+  `invoices` once that table has rows) and remaining-to-invoice note.
+- One-click "Convert to project" on an accepted quotation — atomically
+  creates the project (contract value = quotation grand total, linked via
+  `source_quotation_id`) and links it back onto the quotation.
+- Milestone manager for `billing_type = milestone` projects: add, change
+  status (pending/in progress/completed), delete.
+- Verified end-to-end: accept quotation → convert to project → contract
+  value carried over correctly → switch to milestone billing → add/complete
+  a milestone.
+- Along the way, fixed a real bug: the milestone quick-add form had no
+  `description` field, so `formData.get("description")` returned `null`
+  (not `""`), which failed Zod's `optional()` (only `undefined` passes) —
+  now defaulted to `""` before validation.
+
 ### ⏳ Not started yet
-Projects · Invoices (+ public `/i/[token]` page) · Payment tracking ·
-Recurring invoices · Automated reminders · Dashboard metrics · Razorpay
-integration · quotation templates/PDF/email · production hardening.
+Invoices (+ public `/i/[token]` page, payment tracking) · Recurring
+invoices · Automated reminders · Dashboard metrics · Razorpay integration ·
+quotation templates/PDF/email · production hardening.
 
 See the product/build-plan docs (kept outside this repo) for full detail on
 each phase.

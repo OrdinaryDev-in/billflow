@@ -2,15 +2,18 @@
 
 import { useState, useTransition } from "react";
 import { sendQuotation, duplicateQuotation } from "@/actions/quotations";
+import { convertQuotationToProject } from "@/actions/projects";
 
 export function QuotationActions({
   quotationId,
   status,
   publicUrl,
+  hasProject,
 }: {
   quotationId: string;
   status: string;
   publicUrl: string;
+  hasProject: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
@@ -54,6 +57,16 @@ export function QuotationActions({
       >
         Duplicate
       </button>
+      {status === "accepted" && !hasProject && (
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => startTransition(() => convertQuotationToProject(quotationId))}
+          className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-text-inverse hover:bg-primary-hover disabled:opacity-60"
+        >
+          {isPending ? "Converting…" : "Convert to project"}
+        </button>
+      )}
     </div>
   );
 }

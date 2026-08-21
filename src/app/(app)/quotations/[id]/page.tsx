@@ -57,6 +57,7 @@ export default async function QuotationDetailPage({
           quotationId={quotation.id}
           status={quotation.status}
           publicUrl={publicUrl}
+          hasProject={!!quotation.project_id}
         />
       </div>
 
