@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { sendQuotation, duplicateQuotation } from "@/actions/quotations";
 import { convertQuotationToProject } from "@/actions/projects";
+import { createInvoiceFromQuotation } from "@/actions/invoices";
 
 export function QuotationActions({
   quotationId,
@@ -65,6 +66,16 @@ export function QuotationActions({
           className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-text-inverse hover:bg-primary-hover disabled:opacity-60"
         >
           {isPending ? "Converting…" : "Convert to project"}
+        </button>
+      )}
+      {status === "accepted" && (
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => startTransition(() => createInvoiceFromQuotation(quotationId))}
+          className="rounded-md border border-border-default px-3 py-2 text-sm font-medium text-text-secondary hover:bg-surface-subtle disabled:opacity-60"
+        >
+          Create invoice
         </button>
       )}
     </div>

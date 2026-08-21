@@ -2,6 +2,7 @@
 
 import { useActionState, useTransition } from "react";
 import { createMilestone, deleteMilestone, setMilestoneStatus } from "@/actions/projects";
+import { createInvoiceFromMilestone } from "@/actions/invoices";
 import type { ActionState } from "@/actions/auth";
 import { Field, FormMessage, TextInput } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -74,6 +75,18 @@ export function MilestonesManager({
                   <option value="in_progress">In progress</option>
                   <option value="completed">Completed</option>
                 </select>
+                {m.invoiced_amount < m.amount && (
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() =>
+                      startTransition(() => createInvoiceFromMilestone(projectId, m.id))
+                    }
+                    className="rounded-md border border-border-default px-2 py-1 text-xs font-medium text-text-secondary hover:bg-surface-subtle"
+                  >
+                    Invoice
+                  </button>
+                )}
                 <button
                   type="button"
                   disabled={isPending}

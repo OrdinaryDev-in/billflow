@@ -138,10 +138,42 @@ Recurring → Dashboard → hardening.
   (not `""`), which failed Zod's `optional()` (only `undefined` passes) —
   now defaulted to `""` before validation.
 
+### 🟡 Phase 5 — Invoices (core flow done, PDF/email pending)
+- Invoice list (with a computed "Overdue" badge layered on top of the
+  persisted status once `due_date` has passed — `lib/calculations/invoice-status.ts`),
+  draft creation, details form (client/project/PO/due date/terms), line-item
+  editor with per-line GST rate **and** tax type (CGST+SGST / IGST / none).
+- Place-of-supply helper (`lib/calculations/invoice.ts`): compares
+  organization vs. client state to default new lines to CGST+SGST
+  (intra-state) or IGST (inter-state).
+- Generate an invoice straight from an **accepted quotation** (copies line
+  items, totals, terms) or from an **unpaid milestone** (single line item
+  for the remaining amount, updates `milestones.invoiced_amount`).
+- Draft-editable / locked-once-sent lifecycle; cancel while unpaid.
+- Public invoice page at `/i/[token]` — branded view, balance due, bank/UPI
+  payment details (shown only when configured), auto view-tracking.
+- **Not yet built**: invoice PDF export and email sending (same
+  `RESEND_API_KEY` gap as quotations).
+
+### ✅ Phase 6 — Payment tracking
+- Record full/partial payments against an invoice (method, reference, date,
+  notes) and delete them; `invoices.amount_paid` / `balance_due` / `status`
+  (draft → sent → partially_paid → paid) are recalculated by the
+  `recalculate_invoice_totals` DB trigger from Phase 0, not application code.
+- Global payments list across all invoices.
+- Verified end-to-end: quotation → invoice → mark sent → partial payment
+  (`partially_paid`, correct balance) → full payment (`paid`, ₹0 balance) →
+  project's Invoiced/Paid/Outstanding tiles reflect it correctly.
+- Along the way, fixed the same class of bug as Phase 4: the payment
+  quick-add form has no `notes` field, so `formData.get("notes")` was
+  `null` and failed Zod's `optional()` — defaulted to `""` before
+  validation. (Worth grepping for elsewhere if new quick-add forms are
+  added without every schema field present as an input.)
+
 ### ⏳ Not started yet
-Invoices (+ public `/i/[token]` page, payment tracking) · Recurring
-invoices · Automated reminders · Dashboard metrics · Razorpay integration ·
-quotation templates/PDF/email · production hardening.
+Recurring invoices · Automated reminders · Dashboard metrics (still
+hard-coded ₹0 tiles) · Razorpay integration · quotation/invoice
+templates/PDF/email · production hardening.
 
 See the product/build-plan docs (kept outside this repo) for full detail on
 each phase.
