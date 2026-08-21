@@ -33,6 +33,30 @@ export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 
+export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      {...props}
+      className={cn(
+        "w-full rounded-md border border-border-default bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary",
+        props.className,
+      )}
+    />
+  );
+}
+
+export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      {...props}
+      className={cn(
+        "w-full rounded-md border border-border-default bg-surface px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary",
+        props.className,
+      )}
+    />
+  );
+}
+
 export function FormMessage({ error, success }: { error?: string; success?: string }) {
   if (!error && !success) return null;
   return (

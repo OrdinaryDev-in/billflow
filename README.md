@@ -89,12 +89,22 @@ Recurring → Dashboard → hardening.
   trigger → onboarding → org + owner membership → dashboard → settings
   save).
 
+### ✅ Phase 2 — Clients
+- List page with search (`?q=`) and status filter (active/archived/all),
+  empty state, status badges.
+- Create and edit via a shared `ClientForm` (company/individual, contact,
+  GSTIN, address, notes).
+- Archive/reactivate toggle (`useTransition`, no page reload).
+- Client detail page (outstanding balance and linked
+  projects/quotations/invoices are placeholders until those features land).
+- Verified end-to-end against the live Supabase project (create → list →
+  search → edit → archive → reactivate).
+
 ### ⏳ Not started yet
-Clients · Quotations (+ templates, approval workflow, public `/q/[token]`
-page, PDF generation, email sending) · Projects · Invoices (+ public
-`/i/[token]` page) · Payment tracking · Recurring invoices · Automated
-reminders · Dashboard metrics · Razorpay integration · production
-hardening.
+Quotations (+ templates, approval workflow, public `/q/[token]` page, PDF
+generation, email sending) · Projects · Invoices (+ public `/i/[token]`
+page) · Payment tracking · Recurring invoices · Automated reminders ·
+Dashboard metrics · Razorpay integration · production hardening.
 
 See the product/build-plan docs (kept outside this repo) for full detail on
 each phase.
