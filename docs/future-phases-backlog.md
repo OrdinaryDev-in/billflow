@@ -6,7 +6,7 @@ This backlog covers the product roadmap **after MVP completion**.
 
 The MVP establishes the core workflow:
 
-> Organization → Client → Quotation → Project → Invoice → Payment
+> Organization → Client → Quotation → Project → Work Tracking → Invoice → Payment (manual)
 
 The future roadmap should focus on increasing automation, improving client payment experience, supporting agencies, and adding India-specific and international capabilities without turning the product into a full ERP too early.
 
@@ -189,6 +189,14 @@ Create a premium client-facing experience.
 
 ## Epic 3.2 — Payment Gateway Integration
 
+The MVP ships with manual payment tracking only (client pays externally,
+the user records it — see product-plan.md section 8/9 and build-plan.md
+section 14). This epic is where that graduates to the client paying
+inline through a generated link, with the gateway webhook auto-recording
+the payment. `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` /
+`RAZORPAY_WEBHOOK_SECRET` are already scaffolded (empty) in `.env.example`,
+waiting on this phase.
+
 ### Initial provider
 
 Razorpay should be the first integration.
@@ -318,6 +326,46 @@ Strengthen the product for software agencies.
 - [ ] Add payment timeline
 - [ ] Add milestone financial progress
 - [ ] Add contract utilization percentage
+
+---
+
+## Epic 4.3 — Advanced Work Management
+
+The MVP ships lightweight, project-scoped work items (title, status,
+priority, due date — see product-plan.md section 6.7 and
+build-plan.md section 4.14) deliberately kept simple: one flat list per
+project, no boards, no relationships. This epic is where it grows into
+something closer to a full work-tracking feature, once real usage
+justifies the extra complexity — see the "Recommended Product Rule" at
+the end of this document before building any of it.
+
+### Features
+
+- Kanban board view (drag-and-drop between status columns)
+- Manual drag-and-drop ordering within a column
+- Subtasks / checklists on a work item
+- Work item ↔ milestone relationships (e.g. a milestone auto-completes or
+  is blocked by its linked work items)
+- Time tracking (estimated vs. actual hours)
+- Team assignment on a work item (depends on Epic 5.1 — Team Members)
+- A standalone top-level "My Work" view across all projects, not just the
+  per-project dashboard tile
+- Automated progress suggestions (e.g. "this project is behind its usual
+  pace")
+- Optional: generate initial work items from quotation deliverables when
+  converting a quotation to a project
+
+### Backlog
+
+- [ ] Validate demand before building any of the above (see product rule)
+- [ ] Kanban board UI with drag-and-drop status changes
+- [ ] Persist manual sort order via drag-and-drop
+- [ ] Subtask data model and UI
+- [ ] Work item ↔ milestone linking model
+- [ ] Time tracking fields and reporting
+- [ ] Work item assignee field (requires Epic 5.1 roles/members)
+- [ ] Standalone "My Work" cross-project view
+- [ ] Quotation-deliverable → work-item generation on project creation
 
 ---
 
@@ -769,8 +817,9 @@ Build only after repeated customer demand.
 ## Release 1 — MVP
 - Quotations
 - Projects
+- Work items
 - Invoices
-- Payments
+- Payments (manual tracking)
 - PDFs
 
 ## Release 2 — Automation
@@ -787,6 +836,7 @@ Build only after repeated customer demand.
 - Milestones
 - Teams
 - Roles
+- Advanced work management (Kanban, subtasks, assignees — Epic 4.3)
 
 ## Release 5 — Intelligence
 - Reports

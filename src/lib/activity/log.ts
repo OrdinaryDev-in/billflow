@@ -10,7 +10,8 @@ export type ActivityEntityType =
   | "project"
   | "invoice"
   | "payment"
-  | "recurring_schedule";
+  | "recurring_schedule"
+  | "work_item";
 
 /**
  * Records an entry in activity_logs for the dashboard's "Recent activity"

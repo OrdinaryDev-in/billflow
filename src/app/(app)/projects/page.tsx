@@ -4,6 +4,7 @@ import { requireOrganization } from "@/lib/organizations/require";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/calculations/quotation";
 import { StatusBadge } from "@/components/status-badge";
+import { calculateProjectProgress, isDueSoon, isOverdue } from "@/lib/calculations/work-items";
 
 export const metadata: Metadata = { title: "Projects" };
 
@@ -18,11 +19,24 @@ export default async function ProjectsPage() {
   const organization = await requireOrganization();
   const supabase = await createClient();
 
-  const { data: projects, error } = await supabase
-    .from("projects")
-    .select("id, name, status, billing_type, contract_value, currency, clients(name)")
-    .eq("organization_id", organization.id)
-    .order("created_at", { ascending: false });
+  const [{ data: projects, error }, { data: workItems }] = await Promise.all([
+    supabase
+      .from("projects")
+      .select("id, name, status, billing_type, contract_value, currency, clients(name)")
+      .eq("organization_id", organization.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("work_items")
+      .select("project_id, status, due_date")
+      .eq("organization_id", organization.id),
+  ]);
+
+  const workByProject = new Map<string, { status: string; due_date: string | null }[]>();
+  for (const item of workItems ?? []) {
+    const list = workByProject.get(item.project_id) ?? [];
+    list.push(item);
+    workByProject.set(item.project_id, list);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -67,35 +81,64 @@ export default async function ProjectsPage() {
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Client</th>
                 <th className="px-4 py-3">Billing</th>
+                <th className="px-4 py-3">Work</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3 text-right">Contract value</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-default">
-              {projects.map((p) => (
-                <tr key={p.id} className="hover:bg-surface-subtle">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/projects/${p.id}`}
-                      className="font-medium text-text-primary hover:text-primary"
-                    >
-                      {p.name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-text-secondary">
-                    {(p.clients as unknown as { name: string } | null)?.name ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-text-secondary">
-                    {BILLING_TYPE_LABELS[p.billing_type] ?? p.billing_type}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={p.status} />
-                  </td>
-                  <td className="px-4 py-3 text-right font-medium tabular-nums text-text-primary">
-                    {formatCurrency(p.contract_value, p.currency)}
-                  </td>
-                </tr>
-              ))}
+              {projects.map((p) => {
+                const items = workByProject.get(p.id) ?? [];
+                const progress = calculateProjectProgress(items);
+                const blocked = items.filter((i) => i.status === "blocked").length;
+                const attention = items.filter(
+                  (i) => isDueSoon(i.due_date, i.status) || isOverdue(i.due_date, i.status),
+                ).length;
+
+                return (
+                  <tr key={p.id} className="hover:bg-surface-subtle">
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/projects/${p.id}`}
+                        className="font-medium text-text-primary hover:text-primary"
+                      >
+                        {p.name}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-text-secondary">
+                      {(p.clients as unknown as { name: string } | null)?.name ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-text-secondary">
+                      {BILLING_TYPE_LABELS[p.billing_type] ?? p.billing_type}
+                    </td>
+                    <td className="px-4 py-3 text-text-secondary">
+                      {progress === null ? (
+                        "—"
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="tabular-nums">{progress}%</span>
+                          {blocked > 0 && (
+                            <span className="text-xs font-medium text-danger">
+                              ⚠ {blocked} blocked
+                            </span>
+                          )}
+                          {blocked === 0 && attention > 0 && (
+                            <span className="text-xs font-medium text-warning">
+                              ⚠ {attention} due soon
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={p.status} />
+                    </td>
+                    <td className="px-4 py-3 text-right font-medium tabular-nums text-text-primary">
+                      {formatCurrency(p.contract_value, p.currency)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           </div>

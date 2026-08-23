@@ -7,6 +7,7 @@ const ENTITY_LABELS: Record<ActivityEntityType, string> = {
   invoice: "Invoice",
   payment: "Payment",
   recurring_schedule: "Recurring schedule",
+  work_item: "Work item",
 };
 
 const ACTION_VERBS: Record<string, string> = {
@@ -25,10 +26,40 @@ const ACTION_VERBS: Record<string, string> = {
   client_accepted: "accepted by the client",
   client_rejected: "declined by the client",
   client_changes_requested: "sent back for changes by the client",
+  status_changed: "status changed",
+  completed: "completed",
+  deleted: "deleted",
 };
 
-export function describeActivity(entityType: string, action: string): string {
+export function describeActivity(
+  entityType: string,
+  action: string,
+  metadata?: Record<string, unknown> | null,
+): string {
   const entityLabel = ENTITY_LABELS[entityType as ActivityEntityType] ?? entityType;
   const verb = ACTION_VERBS[action] ?? action.replace(/_/g, " ");
-  return `${entityLabel} ${verb}`;
+
+  if (entityType === "work_item" && action === "status_changed" && metadata?.from && metadata?.to) {
+    const title = typeof metadata.title === "string" ? `"${metadata.title}"` : "Work item";
+    return `${title} moved from ${STATUS_LABEL(metadata.from)} to ${STATUS_LABEL(metadata.to)}`;
+  }
+
+  const label =
+    typeof metadata?.title === "string"
+      ? metadata.title
+      : typeof metadata?.name === "string"
+        ? metadata.name
+        : null;
+
+  return label ? `${entityLabel} ${verb} — ${label}` : `${entityLabel} ${verb}`;
+}
+
+function STATUS_LABEL(value: unknown): string {
+  const map: Record<string, string> = {
+    todo: "To Do",
+    in_progress: "In Progress",
+    blocked: "Blocked",
+    completed: "Completed",
+  };
+  return typeof value === "string" ? (map[value] ?? value) : String(value);
 }

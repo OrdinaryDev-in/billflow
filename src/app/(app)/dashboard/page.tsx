@@ -4,6 +4,7 @@ import { requireOrganization } from "@/lib/organizations/require";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/calculations/quotation";
 import { describeActivity } from "@/lib/activity/format";
+import { isDueSoon, isOverdue } from "@/lib/calculations/work-items";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -23,6 +24,8 @@ export default async function DashboardPage() {
     { data: upcomingDue },
     { data: recentPayments },
     { data: recentActivity },
+    { data: workItems },
+    { data: expiringQuotations },
   ] = await Promise.all([
     supabase
       .from("invoices")
@@ -69,6 +72,18 @@ export default async function DashboardPage() {
       .eq("organization_id", organization.id)
       .order("created_at", { ascending: false })
       .limit(8),
+    supabase
+      .from("work_items")
+      .select("id, project_id, title, status, due_date, completed_at, projects(name)")
+      .eq("organization_id", organization.id),
+    supabase
+      .from("quotations")
+      .select("id, quotation_number, valid_until, clients(name)")
+      .eq("organization_id", organization.id)
+      .in("status", ["sent", "viewed"])
+      .not("valid_until", "is", null)
+      .gte("valid_until", today)
+      .lte("valid_until", new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10)),
   ]);
 
   const outstanding = (outstandingRows ?? []).reduce((sum, r) => sum + r.balance_due, 0);
@@ -82,6 +97,29 @@ export default async function DashboardPage() {
     { label: "Paid this month", value: paidThisMonth },
     { label: "Quote pipeline", value: quotePipeline },
   ];
+
+  const items = workItems ?? [];
+  const startOfMonthStr = startOfMonth.toISOString();
+  const workStats = [
+    { label: "In progress", value: items.filter((i) => i.status === "in_progress").length },
+    { label: "Blocked", value: items.filter((i) => i.status === "blocked").length },
+    { label: "Due soon", value: items.filter((i) => isDueSoon(i.due_date, i.status)).length },
+    {
+      label: "Completed this month",
+      value: items.filter((i) => i.completed_at && i.completed_at >= startOfMonthStr).length,
+    },
+  ];
+
+  const blockedItems = items.filter((i) => i.status === "blocked");
+  const dueSoonOrOverdueItems = items.filter(
+    (i) => isDueSoon(i.due_date, i.status) || isOverdue(i.due_date, i.status),
+  );
+
+  const hasAttention =
+    (overdueRows?.length ?? 0) > 0 ||
+    blockedItems.length > 0 ||
+    dueSoonOrOverdueItems.length > 0 ||
+    (expiringQuotations?.length ?? 0) > 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -107,6 +145,86 @@ export default async function DashboardPage() {
           </div>
         ))}
       </div>
+
+      <div>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-tertiary">
+          My work
+        </h2>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {workStats.map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-lg border border-border-default bg-surface p-4 shadow-sm"
+            >
+              <p className="text-xs font-medium text-text-secondary">{stat.label}</p>
+              <p className="mt-1 text-xl font-bold tabular-nums text-text-primary">
+                {stat.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {hasAttention && (
+        <div className="rounded-lg border border-border-default bg-surface shadow-sm">
+          <div className="border-b border-border-default px-5 py-3">
+            <h2 className="text-sm font-semibold text-text-primary">Attention required</h2>
+          </div>
+          <ul className="divide-y divide-border-default">
+            {(overdueRows?.length ?? 0) > 0 && (
+              <li className="px-5 py-3">
+                <Link
+                  href="/invoices"
+                  className="text-sm font-medium text-danger hover:underline"
+                >
+                  ⚠ {overdueRows!.length} invoice{overdueRows!.length > 1 ? "s" : ""} overdue
+                </Link>
+              </li>
+            )}
+            {blockedItems.map((item) => (
+              <li key={item.id} className="px-5 py-3">
+                <Link
+                  href={`/projects/${item.project_id}/work`}
+                  className="text-sm font-medium text-danger hover:underline"
+                >
+                  ⚠ {item.title} is blocked
+                </Link>
+                <p className="text-xs text-text-tertiary">
+                  {(item.projects as unknown as { name: string } | null)?.name}
+                </p>
+              </li>
+            ))}
+            {dueSoonOrOverdueItems
+              .filter((i) => i.status !== "blocked")
+              .map((item) => (
+                <li key={item.id} className="px-5 py-3">
+                  <Link
+                    href={`/projects/${item.project_id}/work`}
+                    className="text-sm font-medium text-warning hover:underline"
+                  >
+                    ⚠ {item.title} due {item.due_date}
+                  </Link>
+                  <p className="text-xs text-text-tertiary">
+                    {(item.projects as unknown as { name: string } | null)?.name}
+                  </p>
+                </li>
+              ))}
+            {(expiringQuotations ?? []).map((q) => (
+              <li key={q.id} className="px-5 py-3">
+                <Link
+                  href={`/quotations/${q.id}`}
+                  className="text-sm font-medium text-warning hover:underline"
+                >
+                  ⚠ {q.quotation_number} expires {q.valid_until}
+                </Link>
+                <p className="text-xs text-text-tertiary">
+                  {(q.clients as unknown as { name: string } | null)?.name}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="rounded-lg border border-border-default bg-surface shadow-sm">

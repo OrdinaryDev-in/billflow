@@ -8,6 +8,7 @@ import { formatCurrency } from "@/lib/calculations/quotation";
 import { ProjectForm } from "../project-form";
 import { ProjectStatusControl } from "./project-status-control";
 import { MilestonesManager } from "./milestones-manager";
+import { ProjectWorkSummary } from "@/components/project-work-summary";
 
 export const metadata: Metadata = { title: "Project" };
 
@@ -39,6 +40,12 @@ export default async function ProjectDetailPage({
     .from("invoices")
     .select("grand_total, amount_paid")
     .eq("project_id", project.id);
+
+  const { data: workItems } = await supabase
+    .from("work_items")
+    .select("*")
+    .eq("project_id", project.id)
+    .order("sort_order", { ascending: true });
 
   const invoicedValue = (invoiceAggregates ?? []).reduce((sum, i) => sum + i.grand_total, 0);
   const paidValue = (invoiceAggregates ?? []).reduce((sum, i) => sum + i.amount_paid, 0);
@@ -88,6 +95,8 @@ export default async function ProjectDetailPage({
           contract value.
         </p>
       )}
+
+      <ProjectWorkSummary projectId={project.id} workItems={workItems ?? []} />
 
       <ProjectForm
         action={updateProject.bind(null, project.id)}

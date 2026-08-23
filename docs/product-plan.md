@@ -69,16 +69,30 @@ Create Project
   ↓
 Configure Billing Plan
   ↓
+Track Work Items
+  ↓
+Review Progress / Milestone Complete
+  ↓
 Advance / Milestone / Full / Recurring Invoice
   ↓
-Send Payment Link
+Client Pays Externally (bank transfer / UPI / manual)
   ↓
-Track Payment
+Record Payment
   ↓
 Automatic Reminders
   ↓
 Paid / Overdue
 ```
+
+The Billflow user manages everything end to end. Clients do not have
+accounts, logins, or a collaboration surface — they remain business
+records and external recipients of quotations, invoices, PDFs and emails.
+
+> **Billflow is managed by the service provider, not by the client.**
+
+A payment link / payment gateway step (client pays inline, webhook
+confirms automatically) is intentionally **not** part of this workflow —
+see section 8 and the future-phases backlog.
 
 ---
 
@@ -177,8 +191,31 @@ Track:
 - Remaining value
 - Billing type
 - Linked milestones
+- Linked work items and progress (section 6.7)
 
-### 6.7 Invoices
+### 6.7 Work items
+Lightweight, project-scoped task tracking — not a general-purpose PM tool.
+One actionable unit of work inside a project, answering: what's in
+progress, what's blocked, what's pending, what's done, what needs
+attention.
+
+- Title, optional description
+- Status: To Do, In Progress, Blocked, Completed
+- Priority: Low, Medium, High, Urgent
+- Due date
+- Inline status updates
+- Grouped list view inside the project (by status)
+- Project progress = completed work items ÷ total work items
+- Surfaced on the project overview (progress, next work, blocked/due-soon
+  counts), on the projects list (compact indicators), and on the dashboard
+  ("My work" summary + "Attention required")
+
+Explicitly out of scope for the MVP: Kanban/drag-and-drop boards, a
+standalone top-level "My Work" module, subtasks or dependencies, time
+tracking, team assignment, sprints/Gantt charts. See the future-phases
+backlog.
+
+### 6.8 Invoices
 - Draft
 - Send
 - Mark paid
@@ -202,15 +239,18 @@ Statuses:
 - Overdue
 - Cancelled
 
-### 6.8 Payment tracking
-- Manual payments
+### 6.9 Payment tracking
+- Manual payments (client pays externally — bank transfer, UPI, cash, or
+  any other method — the user records it)
 - Partial payments
-- Payment method
-- Payment reference
-- Payment date
+- Payment method, reference and date
 - Automatic balance calculation
 
-### 6.9 Recurring invoices
+Payment gateway integration (client pays inline via a generated payment
+link, gateway webhook auto-records the payment) is **not** part of the
+MVP — see section 8 and the future-phases backlog.
+
+### 6.10 Recurring invoices
 Support:
 - Weekly
 - Monthly
@@ -223,14 +263,14 @@ Use cases:
 - AMC
 - Dedicated developer contracts
 
-### 6.10 Email sending
+### 6.11 Email sending
 - Send quotation
 - Send invoice
 - Send reminder
 - Delivery history
 - Open/view tracking where feasible
 
-### 6.11 Dashboard
+### 6.12 Dashboard
 Show:
 - Outstanding amount
 - Overdue amount
@@ -238,6 +278,9 @@ Show:
 - Invoice pipeline
 - Upcoming recurring invoices
 - Recent activity
+- My work (in progress / blocked / due soon / completed this month)
+- Attention required (overdue invoices, blocked work, work due soon,
+  quotations expiring soon)
 
 ---
 
@@ -258,17 +301,52 @@ The user should be able to generate an invoice directly from an unpaid milestone
 
 ## 8. Payment Collection Strategy
 
-Initial payment methods:
+### MVP: manual tracking only
+
+```text
+Invoice
+  ↓
+Client pays externally
+  ↓
+User records the payment
+  ↓
+Invoice balance/status updates
+```
+
+Initial payment methods (all manually recorded by the user):
 - Bank transfer
 - UPI
-- Razorpay payment link
-- Cash/manual
+- Cash
+- Razorpay *(as a reference label for a payment the client already made
+  outside the app — not a live gateway integration)*
 - Other
 
-Later:
+No payment gateway, payment link generation, or webhook processing is
+part of the MVP.
+
+### Later — payment gateway integration (future phase, not MVP)
+
+```text
+Invoice
+  ↓
+Generate Payment Link
+  ↓
+Payment Gateway (Razorpay first)
+  ↓
+Webhook
+  ↓
+Automatic Payment Record
+  ↓
+Invoice Updated
+```
+
+Then:
 - Cashfree
 - Stripe for international clients
 - Additional gateways
+
+See the future-phases backlog (Epic 3.2 — Payment Gateway Integration)
+for the full plan.
 
 ---
 
@@ -301,6 +379,14 @@ Do not build in the MVP:
 - ERP
 - Advanced accountant workflows
 - Tally synchronization
+- Payment gateway integration, payment links, automatic payment
+  reconciliation (see section 8 — manual payment tracking only)
+- A client portal or client authentication — clients remain external
+  recipients of quotations/invoices, never logged-in users
+- General-purpose project management: Kanban boards, drag-and-drop
+  ordering, subtasks/dependencies, sprints, Gantt charts, time tracking,
+  team assignment, a standalone "My Work" module (work items are a
+  lightweight project-scoped feature, not a PM product — see section 6.7)
 
 ---
 

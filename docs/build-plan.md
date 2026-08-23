@@ -8,7 +8,7 @@
 
 Build a SaaS platform for Indian software freelancers, consultants and agencies that manages the commercial lifecycle:
 
-> Client → Quotation → Approval → Project → Invoice → Payment
+> Client → Quotation → Approval → Project → Work Tracking → Invoice → Payment
 
 ### Updated MVP technology stack
 
@@ -25,7 +25,7 @@ The MVP architecture is based on:
 - **Server-side mutations:** Next.js Server Actions where appropriate
 - **Background jobs:** Supabase Cron / scheduled Edge Functions or a Vercel-compatible job provider when required
 - **Email:** Transactional email provider such as Resend
-- **Payments:** Razorpay in the first payment phase
+- **Payments:** manual tracking only in the MVP (bank transfer/UPI/cash, user-recorded); Razorpay is a future phase, not MVP — see section 14
 - **PDF generation:** HTML/CSS templates rendered to PDF through a server-side compatible service/library
 
 ### Architecture principle
@@ -510,6 +510,53 @@ create table public.activity_logs (
 
 ---
 
+## 4.14 work_items
+
+Lightweight, project-scoped task tracking — one actionable unit of work
+inside a project. Not a general-purpose PM system: no subtasks,
+dependencies, assignees, or time tracking in the MVP.
+
+```sql
+create table public.work_items (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references organizations(id) on delete cascade,
+  project_id uuid not null references projects(id) on delete cascade,
+  title text not null,
+  description text,
+  status text not null default 'todo',
+  priority text not null default 'medium',
+  due_date date,
+  completed_at timestamptz,
+  sort_order integer not null default 0,
+  created_by uuid references auth.users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint work_items_status_check
+    check (status in ('todo', 'in_progress', 'blocked', 'completed')),
+  constraint work_items_priority_check
+    check (priority in ('low', 'medium', 'high', 'urgent'))
+);
+
+create index idx_work_items_organization_id on work_items(organization_id);
+create index idx_work_items_project_id on work_items(project_id);
+create index idx_work_items_status on work_items(status);
+create index idx_work_items_due_date on work_items(due_date);
+create index idx_work_items_org_status on work_items(organization_id, status);
+```
+
+Business rules:
+- A work item must belong to a project in the same organization.
+- Defaults to status `todo`, priority `medium`.
+- `completed_at` is set/cleared automatically by a DB trigger whenever
+  `status` transitions into/out of `completed` — never by application
+  code, so every write path (app, future API, admin fix) gets it for free.
+- Completing every work item does **not** automatically complete the
+  project — delivery, review, invoicing and payment steps may remain.
+- Project progress = completed work items ÷ total work items (null/"No
+  work items yet" when there are none — never a misleading 0%).
+
+---
+
 # 5. Row Level Security Strategy
 
 RLS must be enabled on all tenant-owned tables.
@@ -585,11 +632,10 @@ Use for:
 
 Use for:
 
-- Razorpay webhooks
-- Public APIs
-- Public payment actions
+- Public APIs (`/q/[token]`, `/i/[token]` and their action endpoints)
 - External integrations
-- Scheduled-job endpoints when needed
+- Scheduled-job endpoints (recurring invoice generation; built)
+- Razorpay webhooks and public payment actions (future phase, not MVP)
 
 ---
 
@@ -621,11 +667,11 @@ app/api/
 Recommended routes:
 
 ```http
-POST /api/webhooks/razorpay
-POST /api/public/quotation/:token/action
-POST /api/public/invoice/:token/payment
-POST /api/jobs/recurring-invoices
-POST /api/jobs/payment-reminders
+POST /api/public/quotation/:token/action      # built
+POST /api/jobs/recurring-invoices              # built (idempotent; not yet on a schedule)
+POST /api/webhooks/razorpay                    # future — payment gateway integration
+POST /api/public/invoice/:token/payment        # future — payment gateway integration
+POST /api/jobs/payment-reminders               # future — automated reminders
 ```
 
 Internal CRUD operations should primarily use typed server-side functions and Server Actions instead of creating unnecessary REST endpoints.
@@ -881,6 +927,7 @@ Suggested authenticated routes:
 /quotations/[id]
 /projects
 /projects/[id]
+/projects/[id]/work
 /invoices
 /invoices/new
 /invoices/[id]
@@ -959,19 +1006,26 @@ Show:
 
 # 14. Payment Architecture
 
-## MVP
+## MVP — manual tracking only
 
-Start with:
+```text
+Invoice
+  ↓
+Client pays externally (bank transfer / UPI / cash / other)
+  ↓
+User records the payment (method, reference, date, notes)
+  ↓
+invoices.amount_paid / balance_due / status recalculated
+```
 
-- Manual payments
-- Bank transfer
-- UPI payment instructions
+No payment gateway, payment link generation, or webhook endpoint is part
+of the MVP. `POST /api/webhooks/razorpay` from the route-handler plan in
+section 7 is **not built** for this reason.
 
-## Payment integration phase
+## Payment gateway integration — future phase, not MVP
 
-Add Razorpay.
-
-Flow:
+Deferred to the future-phases backlog (Epic 3.2 — Payment Gateway
+Integration). Planned flow, for reference:
 
 ```text
 Invoice
@@ -991,13 +1045,8 @@ Create Payment Record
 Update Invoice
 ```
 
-Webhook endpoint:
-
-```text
-POST /api/webhooks/razorpay
-```
-
-All webhook processing must be idempotent.
+Webhook endpoint (future): `POST /api/webhooks/razorpay`. All webhook
+processing must be idempotent when this is built.
 
 ---
 
@@ -1093,6 +1142,14 @@ Use database transactions/RPC functions where multiple financial records must ch
 - [ ] Contract value tracking
 - [ ] Project detail page
 - [ ] Project financial summary
+- [ ] Work items schema (`work_items`, RLS, indexes)
+- [ ] Work items CRUD (create/edit/delete, inline status updates)
+- [ ] Project Work tab (`/projects/[id]/work`), grouped by status
+- [ ] Project overview work summary (progress %, next work, blocked/due-soon)
+- [ ] Projects list work indicators (progress %, blocked/due-soon)
+- [ ] Dashboard "My work" + "Attention required" (work items, overdue
+      invoices, quotations expiring soon)
+- [ ] Work item activity logging
 
 ---
 
@@ -1112,6 +1169,8 @@ Use database transactions/RPC functions where multiple financial records must ch
 ---
 
 # Phase 6 — Payments
+
+Manual tracking only — no payment gateway in the MVP (see section 14).
 
 - [ ] Manual payment recording
 - [ ] Partial payments
@@ -1309,17 +1368,19 @@ Production secrets must only exist in Vercel/server-side environments.
 6. Business settings
 7. Clients
 8. Quotation engine
-9. PDF generation
-10. Public quotation page
-11. Email sending
-12. Projects
-13. Invoice engine
-14. Payment tracking
+9. Public quotation page
+10. Projects
+11. Work items
+12. Invoice engine
+13. Payment tracking (manual)
+14. Recurring invoices
 15. Dashboard
-16. Recurring invoices
-17. Automated reminders
-18. Razorpay
+16. Production hardening
 ```
+
+PDF generation and email sending (previously steps 9/11) and Razorpay
+(previously step 18) are deferred to a future phase — see the
+future-phases backlog. They are not required for MVP acceptance below.
 
 ---
 
@@ -1334,16 +1395,20 @@ The MVP is complete when a user can:
 5. Add clients
 6. Create quotations
 7. Add GST/non-GST pricing
-8. Generate branded PDFs
-9. Send quotations
-10. Share a secure public quotation link
-11. Create a project from an accepted quotation
+8. Send quotations
+9. Share a secure public quotation link
+10. Create a project from an accepted quotation
+11. Track work items inside a project and see its progress
 12. Create invoices
 13. Record full or partial payments
 14. View outstanding balances
 15. Create recurring invoice schedules
-16. View dashboard metrics
+16. View dashboard metrics, including work and attention summaries
 17. Use the application in production on Vercel
+
+Branded PDF export, transactional email sending and payment gateway
+integration are explicitly **not** required for MVP acceptance — see the
+future-phases backlog.
 
 ---
 
@@ -1357,6 +1422,6 @@ The architecture should use Supabase as the managed backend foundation and Postg
 
 The product remains focused on:
 
-> **Proposal → Approval → Project → Invoice → Payment**
+> **Proposal → Approval → Project → Work Tracking → Invoice → Payment**
 
 The post-MVP roadmap can build on this foundation without requiring a rewrite of the core application architecture.

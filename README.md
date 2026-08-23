@@ -3,7 +3,7 @@
 Quotation and invoice platform for Indian software freelancers, consultants
 and small agencies:
 
-> Client → Quotation → Approval → Project → Invoice → Payment
+> Client → Quotation → Approval → Project → Work Tracking → Invoice → Payment
 
 See [`docs/`](docs) for the full product plan, technical build plan and
 future-phases backlog this build follows.
@@ -73,9 +73,10 @@ verified).
 | 1 — Authentication & Organization | Incomplete — enable the Google provider in the Supabase Auth dashboard (code path is built) |
 | 2 — Clients | Done |
 | 3 — Quotations | Incomplete — PDF generation, email sending, quotation templates |
-| 4 — Projects | Done |
+| 4 — Projects (+ Work Items) | Done — includes project-scoped work items: grouped list, inline status, project/dashboard summaries |
 | 5 — Invoices | Incomplete — invoice PDF, invoice email |
-| 6 — Payments | Done |
+| 6 — Payments | Done — manual tracking only, by design (see "Payment gateway" below) |
 | 7 — Recurring Invoices | Incomplete — scheduled execution (the `/api/jobs/recurring-invoices` endpoint is built and idempotent; nothing calls it on a schedule yet — needs Vercel Cron after deployment) |
 | 8 — Dashboard & Product Hardening | Incomplete — production monitoring (needs a deployment + an APM service; error boundaries already log to console as the wiring point) |
+| Payment gateway | Deliberately out of MVP scope — moved to the future backlog (`docs/future-phases-backlog.md`, Epic 3.2). Manual payment tracking (bank transfer/UPI/cash, user-recorded) is the MVP's payment model; no gateway button, payment link, or webhook exists in the app. |
 | Beyond MVP | Not started — Razorpay payment links, automated payment reminders |
