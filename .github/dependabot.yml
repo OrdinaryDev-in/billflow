@@ -10,6 +10,13 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # eslint-config-next@16.3.1 bundles eslint-plugin-react@7.37.5, which still
+      # calls the removed context.getFilename() API and crashes under ESLint 10
+      # (see PR #6 / #10). Remove this once eslint-config-next supports ESLint 10.
+      - dependency-name: "eslint"
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: github-actions
     directory: "/"
