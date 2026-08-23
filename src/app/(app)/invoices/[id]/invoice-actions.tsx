@@ -36,6 +36,14 @@ export function InvoiceActions({
       >
         Preview
       </a>
+      <a
+        href={`/api/invoices/${invoiceId}/pdf`}
+        target="_blank"
+        rel="noreferrer"
+        className="rounded-md border border-border-default px-3 py-2 text-sm font-medium text-text-secondary hover:bg-surface-subtle"
+      >
+        Download PDF
+      </a>
       {status === "draft" && (
         <button
           type="button"

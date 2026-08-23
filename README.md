@@ -80,7 +80,7 @@ verified).
 | 2 — Clients | Done |
 | 3 — Quotations | Done — PDF generation, Resend-backed email sending (set `RESEND_API_KEY` to enable live delivery; no-ops until then), and 6 starter templates (website/mobile/UI-UX/maintenance/retainer/consulting) |
 | 4 — Projects (+ Work Items) | Done — includes project-scoped work items: grouped list, inline status, project/dashboard summaries |
-| 5 — Invoices | Incomplete — invoice PDF, invoice email |
+| 5 — Invoices | Incomplete — invoice email |
 | 6 — Payments | Done — manual tracking only, by design (see "Payment gateway" below) |
 | 7 — Recurring Invoices | Done — Vercel Cron calls `/api/jobs/recurring-invoices` daily (see `vercel.json`); set `CRON_SECRET` in the Vercel project's env vars |
 | 8 — Dashboard & Product Hardening | Incomplete — production monitoring (needs a deployment + an APM service; error boundaries already log to console as the wiring point) |

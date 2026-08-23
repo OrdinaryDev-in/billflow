@@ -1161,7 +1161,7 @@ Use database transactions/RPC functions where multiple financial records must ch
 - [ ] Invoice editor
 - [ ] GST calculations
 - [ ] Invoice numbering
-- [ ] Invoice PDF
+- [x] Invoice PDF
 - [ ] Public invoice page
 - [ ] Invoice email
 - [ ] Due dates
