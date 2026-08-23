@@ -37,3 +37,21 @@ export async function uploadGeneratedDocument(params: {
 
   return data.signedUrl;
 }
+
+/**
+ * Fire-and-forget variant of {@link uploadGeneratedDocument} for callers
+ * that stream the PDF straight back to the requester and only want the
+ * storage copy kept in sync for later reuse (e.g. resending by email).
+ * Failures are logged, not thrown — they must never affect the response
+ * the user is waiting on.
+ */
+export function uploadGeneratedDocumentInBackground(params: {
+  organizationId: string;
+  kind: "quotations" | "invoices";
+  id: string;
+  buffer: Buffer;
+}): void {
+  void uploadGeneratedDocument(params).catch((err) => {
+    console.error("uploadGeneratedDocument (background) failed", err);
+  });
+}
