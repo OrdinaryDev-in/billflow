@@ -78,7 +78,7 @@ verified).
 | 0 — Foundation | Done |
 | 1 — Authentication & Organization | Incomplete — enable the Google provider in the Supabase Auth dashboard (code path is built) |
 | 2 — Clients | Done |
-| 3 — Quotations | Incomplete — PDF generation, email sending, quotation templates |
+| 3 — Quotations | Done — PDF generation, Resend-backed email sending (set `RESEND_API_KEY` to enable live delivery; no-ops until then), and 6 starter templates (website/mobile/UI-UX/maintenance/retainer/consulting) |
 | 4 — Projects (+ Work Items) | Done — includes project-scoped work items: grouped list, inline status, project/dashboard summaries |
 | 5 — Invoices | Incomplete — invoice PDF, invoice email |
 | 6 — Payments | Done — manual tracking only, by design (see "Payment gateway" below) |
