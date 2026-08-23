@@ -30,7 +30,7 @@ export function AppShell({
     <div className="flex min-h-screen">
       <aside className="sticky top-0 hidden h-screen w-60 flex-col overflow-y-auto border-r border-border-default bg-surface px-4 py-6 sm:flex">
         <Link href="/dashboard" className="mb-8 flex items-center gap-2 px-2">
-          <Image src="/brand/billflow-logo-primary.svg" alt="Billflow" width={24} height={24} />
+          <Image src="/brand/billflow-app-icon.svg" alt="" width={24} height={24} />
           <span className="text-base font-semibold text-text-primary">Billflow</span>
         </Link>
         <nav className="flex flex-1 flex-col gap-0.5">
@@ -62,7 +62,7 @@ export function AppShell({
         <header className="flex items-center justify-between border-b border-border-default bg-surface px-4 py-3 sm:hidden">
           <MobileNav organizationName={organizationName} />
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Image src="/brand/billflow-logo-primary.svg" alt="Billflow" width={22} height={22} />
+            <Image src="/brand/billflow-app-icon.svg" alt="" width={24} height={24} />
             <span className="text-sm font-semibold text-text-primary">Billflow</span>
           </Link>
           <div className="w-9" aria-hidden="true" />

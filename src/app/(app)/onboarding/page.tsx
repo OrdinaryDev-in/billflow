@@ -13,7 +13,7 @@ export default async function OnboardingPage() {
   return (
     <div className="flex min-h-screen flex-1 flex-col items-center justify-center px-4 py-12">
       <Image
-        src="/brand/billflow-logo-primary.svg"
+        src="/brand/billflow-app-icon.svg"
         alt="Billflow"
         width={32}
         height={32}
