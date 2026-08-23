@@ -7,8 +7,8 @@ export default function MarketingHomePage() {
       <Image
         src="/brand/billflow-logo-primary.svg"
         alt="Billflow"
-        width={40}
-        height={40}
+        width={180}
+        height={45}
         className="mb-6"
         priority
       />
