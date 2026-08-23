@@ -11,7 +11,9 @@ export const metadata: Metadata = { title: "Dashboard" };
 export default async function DashboardPage() {
   const organization = await requireOrganization();
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const soon = new Date(now.getTime() + 3 * 86400000).toISOString().slice(0, 10);
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
@@ -83,7 +85,7 @@ export default async function DashboardPage() {
       .in("status", ["sent", "viewed"])
       .not("valid_until", "is", null)
       .gte("valid_until", today)
-      .lte("valid_until", new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10)),
+      .lte("valid_until", soon),
   ]);
 
   const outstanding = (outstandingRows ?? []).reduce((sum, r) => sum + r.balance_due, 0);
