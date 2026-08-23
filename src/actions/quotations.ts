@@ -12,9 +12,17 @@ import {
 import { logActivity } from "@/lib/activity/log";
 import type { ActionState } from "@/actions/auth";
 import type { Tables } from "@/types/database";
+import { getQuotationTemplate } from "@/lib/quotation-templates";
+import { loadQuotationPdfData } from "@/lib/pdf/quotation-pdf-data";
+import { renderQuotationPdf } from "@/lib/pdf/render-quotation-pdf";
+import { sendQuotationEmail } from "@/lib/email/send";
 import { z } from "zod";
 
-export async function createDraftQuotation(organizationId: string, clientId: string) {
+export async function createDraftQuotation(
+  organizationId: string,
+  clientId: string,
+  templateId?: string,
+) {
   const supabase = await createSupabaseClient();
 
   const { data: number, error: numberError } = await supabase.rpc("next_quotation_number", {
@@ -25,12 +33,20 @@ export async function createDraftQuotation(organizationId: string, clientId: str
     throw new Error(numberError?.message ?? "Could not allocate a quotation number.");
   }
 
+  const template = getQuotationTemplate(templateId);
+
   const { data, error } = await supabase
     .from("quotations")
     .insert({
       organization_id: organizationId,
       client_id: clientId,
       quotation_number: number,
+      scope_of_work: template?.scopeOfWork ?? null,
+      deliverables: template?.deliverables ?? null,
+      timeline: template?.timeline ?? null,
+      assumptions: template?.assumptions ?? null,
+      exclusions: template?.exclusions ?? null,
+      terms: template?.terms ?? null,
     })
     .select("id")
     .single();
@@ -39,12 +55,63 @@ export async function createDraftQuotation(organizationId: string, clientId: str
     throw new Error(error?.message ?? "Could not create quotation.");
   }
 
+  if (template && template.items.length > 0) {
+    const totals = calculateDocumentTotals(
+      template.items.map((i) => ({
+        type: i.type,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        discountType: null,
+        discountValue: 0,
+        taxRate: i.taxRate,
+      })),
+    );
+
+    const rows = template.items.map((item, index) => {
+      const calc = calculateLineItem({
+        type: item.type,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discountType: null,
+        discountValue: 0,
+        taxRate: item.taxRate,
+      });
+      return {
+        quotation_id: data.id,
+        sort_order: index,
+        type: item.type,
+        title: item.title,
+        description: item.description || null,
+        quantity: item.quantity,
+        unit: item.unit || null,
+        unit_price: item.unitPrice,
+        discount_type: null,
+        discount_value: 0,
+        tax_rate: item.taxRate,
+        line_total: calc.lineTotal,
+      };
+    });
+
+    const { error: itemsError } = await supabase.from("quotation_items").insert(rows);
+    if (itemsError) throw new Error(itemsError.message);
+
+    await supabase
+      .from("quotations")
+      .update({
+        subtotal: totals.subtotal,
+        discount_total: totals.discountTotal,
+        tax_total: totals.taxTotal,
+        grand_total: totals.grandTotal,
+      })
+      .eq("id", data.id);
+  }
+
   await logActivity(supabase, {
     organizationId,
     entityType: "quotation",
     entityId: data.id,
     action: "created",
-    metadata: { quotation_number: number },
+    metadata: { quotation_number: number, template_id: template?.id },
   });
 
   revalidatePath("/quotations");
@@ -180,21 +247,59 @@ export async function sendQuotation(quotationId: string) {
     .from("quotations")
     .update({ status: "sent", sent_at: new Date().toISOString() })
     .eq("id", quotationId)
-    .select("organization_id, quotation_number")
+    .select("organization_id, quotation_number, public_token, currency, grand_total")
     .single();
 
   if (error) throw new Error(error.message);
+  if (!data) return;
 
-  // Email delivery is wired up once RESEND_API_KEY is configured (see .env.example).
-  // Until then, the quotation is marked sent and shareable via its public link.
+  await logActivity(supabase, {
+    organizationId: data.organization_id,
+    entityType: "quotation",
+    entityId: quotationId,
+    action: "sent",
+    metadata: { quotation_number: data.quotation_number },
+  });
 
-  if (data) {
+  // Email delivery is best-effort: it no-ops until RESEND_API_KEY is
+  // configured (see .env.example), and a failure here must not block the
+  // quotation from being marked sent — it's still shareable via its
+  // public link either way.
+  try {
+    const result = await loadQuotationPdfData(supabase, quotationId);
+    if (!result) throw new Error("Quotation not found for email delivery");
+
+    const pdfBuffer = await renderQuotationPdf(result.data);
+    const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL}/q/${data.public_token}`;
+
+    const emailResult = await sendQuotationEmail({
+      to: result.data.client?.email ?? null,
+      organizationName: result.data.organization?.name ?? "Billflow",
+      clientName: result.data.client?.name ?? "there",
+      quotationNumber: data.quotation_number,
+      grandTotal: data.grand_total,
+      currency: data.currency,
+      publicUrl,
+      pdfBuffer,
+    });
+
     await logActivity(supabase, {
       organizationId: data.organization_id,
       entityType: "quotation",
       entityId: quotationId,
-      action: "sent",
-      metadata: { quotation_number: data.quotation_number },
+      action: emailResult.sent ? "email_sent" : "email_skipped",
+      metadata: { quotation_number: data.quotation_number, reason: emailResult.reason },
+    });
+  } catch (emailError) {
+    await logActivity(supabase, {
+      organizationId: data.organization_id,
+      entityType: "quotation",
+      entityId: quotationId,
+      action: "email_failed",
+      metadata: {
+        quotation_number: data.quotation_number,
+        error: emailError instanceof Error ? emailError.message : "Unknown error",
+      },
     });
   }
 
