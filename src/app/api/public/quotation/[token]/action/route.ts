@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { quotationApprovalSchema } from "@/lib/validation/quotations";
 import { logActivity } from "@/lib/activity/log";
+import { sendQuotationDecisionEmail } from "@/lib/email/send";
 
 export async function POST(
   request: Request,
@@ -22,7 +23,7 @@ export async function POST(
 
   const { data: quotation, error: fetchError } = await supabase
     .from("quotations")
-    .select("id, status, organization_id, quotation_number")
+    .select("id, status, organization_id, quotation_number, organizations(email)")
     .eq("public_token", token)
     .single();
 
@@ -72,6 +73,18 @@ export async function POST(
     entityId: quotation.id,
     action: `client_${action}`,
     metadata: { quotation_number: quotation.quotation_number, client_name: clientName },
+  });
+
+  // Best-effort notification to the organization — never fails the request.
+  await sendQuotationDecisionEmail({
+    to: quotation.organizations?.email ?? null,
+    quotationNumber: quotation.quotation_number,
+    clientName,
+    action,
+    clientMessage,
+    appUrl: `${process.env.NEXT_PUBLIC_APP_URL}/quotations/${quotation.id}`,
+  }).catch((notifyError) => {
+    console.error("sendQuotationDecisionEmail failed", notifyError);
   });
 
   return NextResponse.json({ ok: true });
