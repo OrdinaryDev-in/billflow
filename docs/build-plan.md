@@ -1118,19 +1118,20 @@ Use database transactions/RPC functions where multiple financial records must ch
 
 # Phase 3 — Quotations
 
-- [ ] Quotation schema
-- [ ] Quotation items
-- [ ] Quotation editor
-- [ ] GST calculations
-- [ ] Discounts
-- [ ] Proposal sections
-- [ ] Draft saving
-- [ ] Quotation list
-- [ ] Quotation details
-- [ ] Public token
-- [ ] Public quotation page
-- [ ] PDF generation
-- [ ] Email sending
+- [x] Quotation schema
+- [x] Quotation items
+- [x] Quotation editor
+- [x] GST calculations
+- [x] Discounts
+- [x] Proposal sections
+- [x] Draft saving
+- [x] Quotation list
+- [x] Quotation details
+- [x] Public token
+- [x] Public quotation page
+- [x] PDF generation
+- [x] Email sending
+- [x] Quotation templates (starter presets — website/mobile/UI-UX/maintenance/retainer/consulting)
 
 ---
 

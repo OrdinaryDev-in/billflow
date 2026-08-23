@@ -53,12 +53,20 @@ export default async function PublicQuotationPage({
             </p>
             <h1 className="text-xl font-bold text-text-primary">{quotation.quotation_number}</h1>
           </div>
-          <p className="text-right text-sm text-text-secondary">
-            {organization?.name}
-            <br />
-            {quotation.issue_date}
-            {quotation.valid_until && <> · valid until {quotation.valid_until}</>}
-          </p>
+          <div className="text-right">
+            <p className="text-sm text-text-secondary">
+              {organization?.name}
+              <br />
+              {quotation.issue_date}
+              {quotation.valid_until && <> · valid until {quotation.valid_until}</>}
+            </p>
+            <a
+              href={`/api/public/quotation/${token}/pdf`}
+              className="mt-2 inline-block rounded-md border border-border-default px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-surface-subtle"
+            >
+              Download PDF
+            </a>
+          </div>
         </header>
 
         <section className="grid grid-cols-1 gap-4 rounded-lg border border-border-default bg-surface p-6 shadow-sm sm:grid-cols-2">
