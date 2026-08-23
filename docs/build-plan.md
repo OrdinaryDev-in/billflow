@@ -1083,7 +1083,7 @@ Use database transactions/RPC functions where multiple financial records must ch
 - [ ] Implement RLS policies
 - [ ] Configure Supabase Storage
 - [ ] Configure environment variables
-- [ ] Deploy development environment to Vercel
+- [x] Deploy development environment to Vercel
 
 ---
 
@@ -1184,13 +1184,13 @@ Manual tracking only — no payment gateway in the MVP (see section 14).
 
 # Phase 7 — Recurring Invoices
 
-- [ ] Schedule model
-- [ ] Recurring schedule UI
-- [ ] Scheduled execution
-- [ ] Automatic invoice generation
-- [ ] Duplicate prevention
-- [ ] Recurring invoice history
-- [ ] Pause/resume
+- [x] Schedule model
+- [x] Recurring schedule UI
+- [x] Scheduled execution
+- [x] Automatic invoice generation
+- [x] Duplicate prevention
+- [x] Recurring invoice history
+- [x] Pause/resume
 
 ---
 

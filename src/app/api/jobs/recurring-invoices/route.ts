@@ -4,14 +4,15 @@ import { generateInvoiceForSchedule } from "@/lib/recurring/generate";
 
 /**
  * Scheduled entrypoint: generates invoices for every active recurring
- * schedule whose next_run_at has passed. Intended to be called by a
- * Vercel Cron / Supabase scheduled function on a daily basis, authenticated
- * with a bearer token matching CRON_SECRET.
+ * schedule whose next_run_at has passed. Triggered daily by Vercel Cron
+ * (see vercel.json), which calls this route with GET and an
+ * `Authorization: Bearer $CRON_SECRET` header auto-injected by Vercel.
+ * POST is also exposed for manual/local triggering with the same secret.
  *
  * Each schedule's own next_run_at check inside generateInvoiceForSchedule
  * makes this endpoint safe to call more than once for the same day.
  */
-export async function POST(request: Request) {
+async function handleRecurringInvoicesJob(request: Request) {
   const authHeader = request.headers.get("authorization");
   const expected = process.env.CRON_SECRET;
 
@@ -49,3 +50,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ processed: results.length, results });
 }
+
+export const GET = handleRecurringInvoicesJob;
+export const POST = handleRecurringInvoicesJob;
