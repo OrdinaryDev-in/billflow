@@ -307,6 +307,37 @@ export async function sendQuotation(quotationId: string) {
   revalidatePath("/quotations");
 }
 
+export async function deleteQuotation(quotationId: string) {
+  const supabase = await createSupabaseClient();
+
+  const { data: quotation, error: fetchError } = await supabase
+    .from("quotations")
+    .select("organization_id, quotation_number")
+    .eq("id", quotationId)
+    .single();
+
+  if (fetchError || !quotation) {
+    throw new Error(fetchError?.message ?? "Quotation not found.");
+  }
+
+  const { error: deleteError } = await supabase
+    .from("quotations")
+    .delete()
+    .eq("id", quotationId);
+  if (deleteError) throw new Error(deleteError.message);
+
+  await logActivity(supabase, {
+    organizationId: quotation.organization_id,
+    entityType: "quotation",
+    entityId: quotationId,
+    action: "deleted",
+    metadata: { quotation_number: quotation.quotation_number },
+  });
+
+  revalidatePath("/quotations");
+  redirect("/quotations");
+}
+
 export async function duplicateQuotation(quotationId: string) {
   const supabase = await createSupabaseClient();
 

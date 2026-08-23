@@ -16,6 +16,10 @@ export const CURRENT_ORG_COOKIE = "billflow-org-id";
  * Wrapped in React's `cache()` so the (app) layout and the page it wraps
  * — both of which need the current org — share one lookup per request
  * instead of re-querying membership + org rows twice per navigation.
+ *
+ * Fetches memberships joined with their organization row in a single
+ * round trip (instead of a memberships query followed by a separate
+ * organization query) since each Supabase round trip costs 100s of ms.
  */
 export const getCurrentOrganization = cache(
   async (): Promise<Tables<"organizations"> | null> => {
@@ -28,22 +32,15 @@ export const getCurrentOrganization = cache(
 
     const { data: memberships } = await supabase
       .from("organization_members")
-      .select("organization_id, created_at")
+      .select("organization_id, created_at, organizations(*)")
       .order("created_at", { ascending: true });
 
     if (!memberships || memberships.length === 0) return null;
 
-    const targetOrgId =
-      preferredOrgId && memberships.some((m) => m.organization_id === preferredOrgId)
-        ? preferredOrgId
-        : memberships[0].organization_id;
+    const target =
+      (preferredOrgId && memberships.find((m) => m.organization_id === preferredOrgId)) ||
+      memberships[0];
 
-    const { data: organization } = await supabase
-      .from("organizations")
-      .select("*")
-      .eq("id", targetOrgId)
-      .single();
-
-    return organization;
+    return target.organizations as Tables<"organizations"> | null;
   },
 );

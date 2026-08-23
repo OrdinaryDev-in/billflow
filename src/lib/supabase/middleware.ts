@@ -6,13 +6,28 @@ const isPublicPrefixed = (pathname: string) =>
   PUBLIC_APP_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
 /**
+ * Request header carrying the proxy-verified user (JSON-encoded) through to
+ * Server Components via `headers()`. `getAuthUser()` trusts this instead of
+ * calling `supabase.auth.getUser()` again, saving a second network round
+ * trip to Supabase Auth on every render — the proxy below already did that
+ * verification for this exact request. Always set explicitly on every
+ * response path (present with the user, or deleted) so a client can never
+ * forge it: `request.headers` here reflects the raw incoming request, so an
+ * attacker-supplied value must never be allowed to pass through unset.
+ */
+export const VERIFIED_USER_HEADER = "x-billflow-verified-user";
+
+/**
  * Refreshes the Supabase auth session on every request and redirects
  * unauthenticated users away from protected app routes. Public marketing
  * pages, auth pages and the /q and /i public document routes are excluded
- * by the matcher in middleware.ts.
+ * by the matcher in proxy.ts.
  */
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.delete(VERIFIED_USER_HEADER);
+
+  let supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,7 +39,7 @@ export async function updateSession(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options),
           );
@@ -36,6 +51,15 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (user) {
+    requestHeaders.set(VERIFIED_USER_HEADER, JSON.stringify(user));
+    // Rebuild the response with the header attached, carrying over any
+    // session cookies `setAll` already wrote onto the previous response.
+    const refreshedCookies = supabaseResponse.cookies.getAll();
+    supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
+    refreshedCookies.forEach((cookie) => supabaseResponse.cookies.set(cookie));
+  }
 
   const { pathname } = request.nextUrl;
   const isProtectedAppRoute = pathname.startsWith("/dashboard") ||

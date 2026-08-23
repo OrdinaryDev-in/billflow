@@ -1,0 +1,26 @@
+[
+  {
+    "lint": "auth_leaked_password_protection",
+    "entity": "Auth",
+    "reason": "Requires the Supabase Pro plan or above (org 'OrdinaryDev' is on Free) — there's no dashboard toggle to enable it at this tier. Revisit and remove this entry if/when the org upgrades.",
+    "added": "2026-08-24"
+  },
+  {
+    "lint": "authenticated_security_definer_function_executable",
+    "function": "create_organization_with_owner",
+    "reason": "Must stay EXECUTE-able by `authenticated` — every newly signed-up user calls this once during onboarding to create their first organization, before they belong to any org RLS could otherwise key off of. SECURITY DEFINER is required to bootstrap that first organization_members row. Scoped safely: derives the owner from auth.uid() internally (raises if null), never trusts a caller-supplied identity, and only ever inserts a brand-new org owned by the caller — it cannot touch an existing organization. See supabase/migrations/20260821000006_create_organization_rpc.sql.",
+    "added": "2026-08-24"
+  },
+  {
+    "lint": "authenticated_security_definer_function_executable",
+    "function": "next_invoice_number",
+    "reason": "Must stay EXECUTE-able by `authenticated` — called whenever a member sends an invoice, to atomically claim the next sequence number for their organization. SECURITY DEFINER is required for the atomic UPDATE ... RETURNING on organizations.next_invoice_number. Scoped safely: calls private.is_organization_member(target_organization_id) first (itself derived from auth.uid(), not a caller-supplied identity) and raises if the caller isn't a member, so it can only advance the counter for an organization the caller actually belongs to. See supabase/migrations/20260821000004_functions_and_auth_trigger.sql.",
+    "added": "2026-08-24"
+  },
+  {
+    "lint": "authenticated_security_definer_function_executable",
+    "function": "next_quotation_number",
+    "reason": "Same shape and same justification as next_invoice_number above, for quotations.quotation_prefix / next_quotation_number. See supabase/migrations/20260821000004_functions_and_auth_trigger.sql.",
+    "added": "2026-08-24"
+  }
+]

@@ -66,3 +66,23 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm audit --audit-level=high
+
+  supabase-security-gate:
+    name: Supabase security gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # Same check as the local pre-push hook (.husky/pre-push), mirrored
+      # into CI so it can't be skipped by --no-verify, a GitHub web-UI
+      # merge, or a clone that never ran `npm install`. Fails closed if
+      # SUPABASE_ACCESS_TOKEN is missing — see scripts/check-supabase-security.sh.
+      - name: Run Supabase security advisors
+        run: npm run supabase:security-check
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

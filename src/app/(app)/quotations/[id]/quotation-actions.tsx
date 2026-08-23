@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { sendQuotation, duplicateQuotation } from "@/actions/quotations";
+import { sendQuotation, duplicateQuotation, deleteQuotation } from "@/actions/quotations";
 import { convertQuotationToProject } from "@/actions/projects";
 import { createInvoiceFromQuotation } from "@/actions/invoices";
 
@@ -86,6 +86,18 @@ export function QuotationActions({
           Create invoice
         </button>
       )}
+      <button
+        type="button"
+        disabled={isPending}
+        onClick={() => {
+          if (confirm(`Delete quotation permanently? This can't be undone.`)) {
+            startTransition(() => deleteQuotation(quotationId));
+          }
+        }}
+        className="rounded-md border border-border-default px-3 py-2 text-sm font-medium text-danger hover:bg-danger/10 disabled:opacity-60"
+      >
+        Delete
+      </button>
     </div>
   );
 }
