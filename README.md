@@ -54,6 +54,12 @@ docs/
   future-phases-backlog.md    # post-MVP roadmap (Phases 2-12)
 ```
 
+## Contributing & security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev workflow and PR
+expectations, and [SECURITY.md](SECURITY.md) to report a vulnerability
+privately. This project follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Design system
 
 All UI work follows the `billflow-design-system` skill — Billflow Blue

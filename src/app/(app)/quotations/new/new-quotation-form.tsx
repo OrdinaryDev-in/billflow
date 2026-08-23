@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { createDraftQuotation } from "@/actions/quotations";
 import { Field, Select } from "@/components/ui/field";
+import { QUOTATION_TEMPLATES } from "@/lib/quotation-templates";
 
 export function NewQuotationForm({
   organizationId,
@@ -17,7 +18,10 @@ export function NewQuotationForm({
     <form
       action={(formData: FormData) => {
         const clientId = formData.get("clientId") as string;
-        startTransition(() => createDraftQuotation(organizationId, clientId));
+        const templateId = formData.get("templateId") as string;
+        startTransition(() =>
+          createDraftQuotation(organizationId, clientId, templateId || undefined),
+        );
       }}
       className="flex flex-col gap-4 rounded-lg border border-border-default bg-surface p-6 shadow-sm"
     >
@@ -32,6 +36,20 @@ export function NewQuotationForm({
             </option>
           ))}
         </Select>
+      </Field>
+      <Field label="Template" htmlFor="templateId">
+        <Select id="templateId" name="templateId" defaultValue="">
+          <option value="">Blank quotation</option>
+          {QUOTATION_TEMPLATES.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </Select>
+        <p className="mt-1 text-xs text-text-tertiary">
+          Pre-fills scope, deliverables, and sample line items — everything stays editable
+          afterwards.
+        </p>
       </Field>
       <button
         type="submit"
