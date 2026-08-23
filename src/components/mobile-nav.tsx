@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { signOut } from "@/actions/auth";
-import { cn } from "@/lib/utils";
+import { NavLink } from "@/components/nav-link";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -20,7 +19,6 @@ const NAV_ITEMS = [
 
 export function MobileNav({ organizationName }: { organizationName: string }) {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
 
   return (
     <>
@@ -56,29 +54,19 @@ export function MobileNav({ organizationName }: { organizationName: string }) {
             </div>
             <nav className="flex flex-1 flex-col gap-0.5">
               {NAV_ITEMS.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    "rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-surface-subtle hover:text-text-primary",
-                    pathname === item.href
-                      ? "bg-primary-soft text-primary"
-                      : "text-text-secondary",
-                  )}
-                >
+                <NavLink key={item.href} href={item.href} onClick={() => setOpen(false)}>
                   {item.label}
-                </Link>
+                </NavLink>
               ))}
             </nav>
             <div className="border-t border-border-default pt-4">
               <form action={signOut}>
-                <button
-                  type="submit"
-                  className="w-full rounded-md px-2 py-2 text-left text-sm font-medium text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary"
+                <SubmitButton
+                  className="w-full justify-start bg-transparent px-2 py-2 text-left text-text-secondary shadow-none hover:bg-surface-subtle hover:text-text-primary"
+                  pendingText="Signing out…"
                 >
                   Sign out
-                </button>
+                </SubmitButton>
               </form>
             </div>
           </div>

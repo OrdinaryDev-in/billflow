@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "@/actions/auth";
 import { MobileNav } from "@/components/mobile-nav";
+import { NavLink } from "@/components/nav-link";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -35,13 +37,9 @@ export function AppShell({
         </Link>
         <nav className="flex flex-1 flex-col gap-0.5">
           {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary"
-            >
+            <NavLink key={item.href} href={item.href}>
               {item.label}
-            </Link>
+            </NavLink>
           ))}
         </nav>
         <div className="border-t border-border-default pt-4">
@@ -49,12 +47,12 @@ export function AppShell({
             {organizationName}
           </p>
           <form action={signOut}>
-            <button
-              type="submit"
-              className="mt-1 w-full rounded-md px-2 py-2 text-left text-sm font-medium text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary"
+            <SubmitButton
+              className="mt-1 w-full justify-start bg-transparent px-2 py-2 text-left text-text-secondary shadow-none hover:bg-surface-subtle hover:text-text-primary"
+              pendingText="Signing out…"
             >
               Sign out
-            </button>
+            </SubmitButton>
           </form>
         </div>
       </aside>
