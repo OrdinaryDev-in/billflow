@@ -38,6 +38,6 @@
     "husky": "^9.1.7",
     "supabase": "^2.114.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^7"
   }
 }
