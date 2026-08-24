@@ -2,7 +2,7 @@ import { NextResponse, after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { loadQuotationPdfData } from "@/lib/pdf/quotation-pdf-data";
 import { renderQuotationPdf } from "@/lib/pdf/render-quotation-pdf";
-import { uploadGeneratedDocumentInBackground } from "@/lib/pdf/storage";
+import { downloadCachedPdfIfFresh, uploadGeneratedDocumentInBackground } from "@/lib/pdf/storage";
 
 /**
  * Authenticated PDF download for a quotation. Access is enforced by RLS —
@@ -22,18 +22,29 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Quotation not found" }, { status: 404 });
   }
 
-  const buffer = await renderQuotationPdf(result.data);
+  // Quotations are immutable once sent; reuse the last render instead of
+  // paying render+upload cost again if nothing has changed since.
+  const cached = await downloadCachedPdfIfFresh({
+    organizationId: result.organizationId,
+    kind: "quotations",
+    id,
+    recordUpdatedAt: result.updatedAt,
+  });
 
-  // Runs after the response is flushed — keeps the storage copy in sync
-  // for reuse without adding latency to the download itself.
-  after(() =>
-    uploadGeneratedDocumentInBackground({
-      organizationId: result.organizationId,
-      kind: "quotations",
-      id,
-      buffer,
-    }),
-  );
+  const buffer = cached ?? (await renderQuotationPdf(result.data));
+
+  if (!cached) {
+    // Runs after the response is flushed — keeps the storage copy in sync
+    // for reuse without adding latency to the download itself.
+    after(() =>
+      uploadGeneratedDocumentInBackground({
+        organizationId: result.organizationId,
+        kind: "quotations",
+        id,
+        buffer,
+      }),
+    );
+  }
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {

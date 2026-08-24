@@ -2,7 +2,8 @@ import { NextResponse, after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadQuotationPdfData } from "@/lib/pdf/quotation-pdf-data";
 import { renderQuotationPdf } from "@/lib/pdf/render-quotation-pdf";
-import { uploadGeneratedDocumentInBackground } from "@/lib/pdf/storage";
+import { downloadCachedPdfIfFresh, uploadGeneratedDocumentInBackground } from "@/lib/pdf/storage";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 /**
  * Public PDF download for a quotation, gated by its unguessable token.
@@ -11,11 +12,19 @@ import { uploadGeneratedDocumentInBackground } from "@/lib/pdf/storage";
  * copy in Supabase Storage happens in the background so it doesn't add
  * extra network round trips to the response the user is waiting on.
  */
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ token: string }> },
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
+
+  // Service-role client, gated only by the unguessable token — throttle
+  // per caller+token so a leaked token can't be used to hammer rendering.
+  const limited = rateLimit(`quotation-pdf:${getClientIp(request)}:${token}`, 20, 60);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } },
+    );
+  }
+
   const supabase = createAdminClient();
 
   const { data: quotation, error } = await supabase
@@ -33,18 +42,27 @@ export async function GET(
     return NextResponse.json({ error: "Quotation not found" }, { status: 404 });
   }
 
-  const buffer = await renderQuotationPdf(result.data);
+  const cached = await downloadCachedPdfIfFresh({
+    organizationId: result.organizationId,
+    kind: "quotations",
+    id: quotation.id,
+    recordUpdatedAt: result.updatedAt,
+  });
 
-  // Runs after the response is flushed — keeps the storage copy in sync
-  // for reuse without adding latency to the download itself.
-  after(() =>
-    uploadGeneratedDocumentInBackground({
-      organizationId: result.organizationId,
-      kind: "quotations",
-      id: quotation.id,
-      buffer,
-    }),
-  );
+  const buffer = cached ?? (await renderQuotationPdf(result.data));
+
+  if (!cached) {
+    // Runs after the response is flushed — keeps the storage copy in sync
+    // for reuse without adding latency to the download itself.
+    after(() =>
+      uploadGeneratedDocumentInBackground({
+        organizationId: result.organizationId,
+        kind: "quotations",
+        id: quotation.id,
+        buffer,
+      }),
+    );
+  }
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {

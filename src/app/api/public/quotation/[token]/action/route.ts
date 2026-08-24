@@ -3,12 +3,25 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { quotationApprovalSchema } from "@/lib/validation/quotations";
 import { logActivity } from "@/lib/activity/log";
 import { sendQuotationDecisionEmail } from "@/lib/email/send";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ token: string }> },
 ) {
   const { token } = await params;
+
+  // This route uses the service-role client (bypasses RLS) and is gated
+  // only by the unguessable token, plus it writes DB rows and sends an
+  // email — throttle per caller+token so a leaked token can't be hammered.
+  const limited = rateLimit(`quotation-action:${getClientIp(request)}:${token}`, 5, 60);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } },
+    );
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = quotationApprovalSchema.safeParse(body);
 

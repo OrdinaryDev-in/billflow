@@ -2,7 +2,7 @@ import { NextResponse, after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { loadInvoicePdfData } from "@/lib/pdf/invoice-pdf-data";
 import { renderInvoicePdf } from "@/lib/pdf/render-invoice-pdf";
-import { uploadGeneratedDocumentInBackground } from "@/lib/pdf/storage";
+import { downloadCachedPdfIfFresh, uploadGeneratedDocumentInBackground } from "@/lib/pdf/storage";
 
 /**
  * Authenticated PDF download for an invoice. Access is enforced by RLS —
@@ -22,18 +22,29 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
   }
 
-  const buffer = await renderInvoicePdf(result.data);
+  // Invoices are immutable once sent; reuse the last render instead of
+  // paying render+upload cost again if nothing has changed since.
+  const cached = await downloadCachedPdfIfFresh({
+    organizationId: result.organizationId,
+    kind: "invoices",
+    id,
+    recordUpdatedAt: result.updatedAt,
+  });
 
-  // Runs after the response is flushed — keeps the storage copy in sync
-  // for reuse without adding latency to the download itself.
-  after(() =>
-    uploadGeneratedDocumentInBackground({
-      organizationId: result.organizationId,
-      kind: "invoices",
-      id,
-      buffer,
-    }),
-  );
+  const buffer = cached ?? (await renderInvoicePdf(result.data));
+
+  if (!cached) {
+    // Runs after the response is flushed — keeps the storage copy in sync
+    // for reuse without adding latency to the download itself.
+    after(() =>
+      uploadGeneratedDocumentInBackground({
+        organizationId: result.organizationId,
+        kind: "invoices",
+        id,
+        buffer,
+      }),
+    );
+  }
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {

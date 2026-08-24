@@ -4,6 +4,44 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const SIGNED_URL_TTL_SECONDS = 60;
 
 /**
+ * Returns the previously-stored PDF bytes if a copy exists and was rendered
+ * at or after `recordUpdatedAt` — i.e. nothing on the invoice/quotation has
+ * changed since. Returns null on any cache miss (no stored copy, stale
+ * copy, or a storage error), so callers can fall back to re-rendering.
+ */
+export async function downloadCachedPdfIfFresh(params: {
+  organizationId: string;
+  kind: "quotations" | "invoices";
+  id: string;
+  recordUpdatedAt: string;
+}): Promise<Buffer | null> {
+  const { organizationId, kind, id, recordUpdatedAt } = params;
+  const folder = `${organizationId}/${kind}`;
+  const filename = `${id}.pdf`;
+  const supabase = createAdminClient();
+
+  const { data: files, error: listError } = await supabase.storage
+    .from("generated-documents")
+    .list(folder, { search: filename });
+
+  if (listError || !files?.length) return null;
+
+  const file = files.find((f) => f.name === filename);
+  if (!file?.updated_at) return null;
+  if (new Date(file.updated_at).getTime() < new Date(recordUpdatedAt).getTime()) {
+    // The record changed after this PDF was rendered — it's stale.
+    return null;
+  }
+
+  const { data, error: downloadError } = await supabase.storage
+    .from("generated-documents")
+    .download(`${folder}/${filename}`);
+
+  if (downloadError || !data) return null;
+  return Buffer.from(await data.arrayBuffer());
+}
+
+/**
  * Uploads a generated PDF to the `generated-documents` bucket and returns a
  * short-lived signed URL. Always overwrites — quotations/invoices are
  * locked once sent, so re-rendering on every download keeps the PDF in

@@ -1,6 +1,19 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateInvoiceForSchedule } from "@/lib/recurring/generate";
+
+/** Constant-time comparison so a byte-by-byte timing attack can't help an
+ * attacker recover CRON_SECRET one character at a time. */
+function isAuthorized(authHeader: string | null, expected: string): boolean {
+  const provided = authHeader ?? "";
+  const expectedHeader = `Bearer ${expected}`;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expectedHeader);
+  // timingSafeEqual throws on length mismatch, so compare lengths first —
+  // that leaks only the length of the (fixed-format) header, not the secret.
+  return a.length === b.length && timingSafeEqual(a, b);
+}
 
 /**
  * Scheduled entrypoint: generates invoices for every active recurring
@@ -19,7 +32,7 @@ async function handleRecurringInvoicesJob(request: Request) {
   if (!expected) {
     return NextResponse.json({ error: "CRON_SECRET is not configured" }, { status: 500 });
   }
-  if (authHeader !== `Bearer ${expected}`) {
+  if (!isAuthorized(authHeader, expected)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
